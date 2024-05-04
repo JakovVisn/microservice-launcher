@@ -7,7 +7,8 @@
 #include <QCoreApplication>
 #include <QTcpSocket>
 
-Model::Model(): defaultConfigFile(createEmptyFile("/config.ini")), directory(findDirectory()) {
+Model::Model(): defaultConfigFile(createEmptyFile("/config.ini")), defaultSaveFile(createEmptyFile("/save.ini")), directory(findDirectory()) {
+    saveCheckBox.setText("Save&&Exit");
     const QStringList folderNames = getFolderNames();
     for (const QString &folderName : folderNames) {
         QString shortName = readApplicationShortNameFromFile(getDirectory() + "/" + folderName);
@@ -279,4 +280,12 @@ int Model::getProcessId(const QString& processName) const {
     }
 
     return -1; // Return -1 if process is not found on any port
+}
+
+QString Model::getSaveFile() const {
+    return defaultSaveFile;
+}
+
+QCheckBox& Model::getSaveCheckBox(){
+    return saveCheckBox;
 }

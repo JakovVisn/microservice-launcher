@@ -11,7 +11,7 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    setWindowTitle("Microservice Launcher (V1.4.0)");
+    setWindowTitle("Microservice Launcher (V1.5.0)");
 
     model = new Model();
     controller = new Controller(model);
@@ -43,6 +43,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(searchLineEdit, &QLineEdit::textChanged, this, &MainWindow::onSearchLineEditTextChanged);
     connect(searchLineEdit, &QLineEdit::editingFinished, this, &MainWindow::onSearchLineEditEditingFinished);
 
+    connect(qApp, &QApplication::aboutToQuit, this, &MainWindow::saveCheckBoxStateToFile);
+
     QVBoxLayout *mainLayout = new QVBoxLayout(ui->centralwidget);
     mainLayout->setSpacing(0);
 
@@ -72,16 +74,31 @@ MainWindow::MainWindow(QWidget *parent)
 
     searchLayout->addWidget(searchLineEdit);
 
+    QSettings settings(model->getSaveFile(), QSettings::IniFormat);
+
+    settings.beginGroup("CheckBoxSaveState");
+    bool isSaveChecked = settings.value("save", false).toBool();
+    model->getSaveCheckBox().setChecked(isSaveChecked);
+    buttonLayout1->addWidget(&model->getSaveCheckBox());
+
+    settings.endGroup();
+
     mainLayout->addLayout(buttonLayout1);
     mainLayout->addLayout(buttonLayout2);
     mainLayout->addLayout(searchLayout);
     mainLayout->addWidget(scrollArea);
 
+    settings.beginGroup("CheckBoxState");
     QMap<QString, QCheckBox*> checkBoxes = model->getCheckBoxes();
     QMap<QString, QCheckBox*> checkBoxStatuses = model->getCheckBoxStatuses();
     QMap<QString, QCheckBox*>::const_iterator iter;
     for (iter = checkBoxes.constBegin(); iter != checkBoxes.constEnd(); ++iter) {
         const QString &folderName = iter.key();
+
+        if (isSaveChecked) {
+            bool isChecked = settings.value(folderName, false).toBool();
+            iter.value()->setChecked(isChecked);
+        }
 
         QHBoxLayout *rowLayout = new QHBoxLayout;
         rowLayout->setAlignment(Qt::AlignLeft);
@@ -92,6 +109,8 @@ MainWindow::MainWindow(QWidget *parent)
 
         controller->refreshCheckboxState(folderName);
     }
+
+    settings.endGroup();
 
     readWindowSizeFromConfig();
     resize(width, height);
@@ -199,4 +218,24 @@ void MainWindow::onSearchLineEditTextChanged() {
 void MainWindow::onSearchLineEditEditingFinished() {
     searchLineEdit->clear();
     onSearchLineEditTextChanged();
+}
+
+void MainWindow::saveCheckBoxStateToFile() {
+    QSettings settings(model->getSaveFile(), QSettings::IniFormat);
+    settings.beginGroup("CheckBoxState");
+
+    QMap<QString, QCheckBox*> checkBoxes = model->getCheckBoxes();
+    QMap<QString, QCheckBox*>::const_iterator iter;
+    for (iter = checkBoxes.constBegin(); iter != checkBoxes.constEnd(); ++iter) {
+        QString folderName = iter.key();
+        bool isChecked = iter.value()->isChecked();
+        settings.setValue(folderName, isChecked);
+    }
+
+    settings.endGroup();
+
+    settings.beginGroup("CheckBoxSaveState");
+    settings.setValue("save", model->getSaveCheckBox().isChecked());
+
+    settings.endGroup();
 }

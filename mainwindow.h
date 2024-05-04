@@ -34,6 +34,7 @@ private slots:
 private:
     void readWindowSizeFromConfig();
     void loadActionsFromConfigFile();
+    void saveCheckBoxStateToFile();
 
     Ui::MainWindow *ui;
     Model* model;

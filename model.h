@@ -16,6 +16,8 @@ public:
     bool isServiceRunning(const QString& processName) const;
     QMap<QString, QCheckBox*> getCheckBoxStatuses() const;
     int getProcessId(const QString& processName) const;
+    QString getSaveFile() const;
+    QCheckBox& getSaveCheckBox();
 
 private:
     QString getFolderInfo(const QString& folderName) const;
@@ -28,12 +30,15 @@ private:
     QStringList getFolderNames() const;
 
     const QString defaultConfigFile;
+    const QString defaultSaveFile;
     const QString directory;
 
     QMap<QString, QCheckBox*> checkBoxes;
     QMap<QString, QCheckBox*> checkBoxStatuses;
     QMap<QString, QString> shortNames;
     QMap<QString, QVector<int>> servicePorts;
+
+    QCheckBox saveCheckBox;
 };
 
 #endif // MODEL_H
