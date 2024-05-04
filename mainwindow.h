@@ -26,9 +26,11 @@ private slots:
     void onStartButtonClicked();
     void onStopButtonClicked();
     void onRefreshButtonClicked();
+    void onSaveActionClicked(const QString &actionName);
 
 private:
     void readWindowSizeFromConfig();
+    void loadActionsFromConfigFile();
 
     Ui::MainWindow *ui;
     Model* model;

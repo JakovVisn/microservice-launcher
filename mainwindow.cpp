@@ -11,7 +11,7 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    setWindowTitle("Microservice Launcher (V1.2.0)");
+    setWindowTitle("Microservice Launcher (V1.3.0)");
 
     model = new Model();
     controller = new Controller(model);
@@ -85,6 +85,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     readWindowSizeFromConfig();
     resize(width, height);
+
+    loadActionsFromConfigFile();
 }
 
 MainWindow::~MainWindow() {
@@ -137,4 +139,32 @@ void MainWindow::onStopButtonClicked() {
 
 void MainWindow::onRefreshButtonClicked() {
     controller->refresh();
+}
+
+void MainWindow::loadActionsFromConfigFile() {
+    QSettings settings(model->getConfigFile(), QSettings::IniFormat);
+    settings.beginGroup("Save");
+    QStringList keys = settings.childKeys();
+    QMenu *fileMenu = new QMenu("Save", this);
+
+    for (const QString& key : keys) {
+        QString actionName = settings.value(key).toString();
+        QAction *action = new QAction(actionName, this);
+
+        connect(action, &QAction::triggered, this, [this, actionName]() {
+            onSaveActionClicked(actionName);
+        });
+
+        fileMenu->addAction(action);
+    }
+
+    settings.endGroup();
+
+    QMenuBar *menuBar = new QMenuBar(this);
+    menuBar->addMenu(fileMenu);
+    setMenuBar(menuBar);
+}
+
+void MainWindow::onSaveActionClicked(const QString &actionName) {
+    controller->selectDetermined(actionName);
 }

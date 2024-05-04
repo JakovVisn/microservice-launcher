@@ -15,6 +15,7 @@ public:
     void stop(const QString& processName);
     void refresh();
     void refreshCheckboxState(const QString& processName);
+    void selectDetermined(const QString &actionName);
 
 private:
     Model* model;

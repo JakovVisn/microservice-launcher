@@ -124,3 +124,18 @@ void Controller::deselectAll() {
         checkBox->setChecked(false);
     }
 };
+
+void Controller::selectDetermined(const QString &actionName) {
+    QSettings settings(model->getConfigFile(), QSettings::IniFormat);
+    settings.beginGroup("Action");
+    QStringList checkboxNames = settings.value(actionName).toStringList();
+    settings.endGroup();
+
+    QMap<QString, QCheckBox*> checkBoxes = model->getCheckBoxes();
+    for (const QString &checkboxName : checkboxNames) {
+        QCheckBox *checkBox = checkBoxes.value(checkboxName);
+        if (checkBox) {
+            checkBox->setChecked(true);
+        }
+    }
+}
