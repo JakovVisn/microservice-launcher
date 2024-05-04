@@ -11,10 +11,16 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    setWindowTitle("Microservice Launcher (V1.1.0)");
+    setWindowTitle("Microservice Launcher (V1.2.0)");
 
     model = new Model();
     controller = new Controller(model);
+
+    selectAllButton = new QPushButton("Select All", this);
+    selectAllButton->setFixedWidth(85);
+
+    deselectAllButton = new QPushButton("Deselect All", this);
+    deselectAllButton->setFixedWidth(85);
 
     startButton = new QPushButton("Start", this);
     startButton->setFixedWidth(40);
@@ -25,6 +31,8 @@ MainWindow::MainWindow(QWidget *parent)
     refreshButton = new QPushButton("Refresh", this);
     refreshButton->setFixedWidth(60);
 
+    connect(selectAllButton, &QPushButton::clicked, this, &MainWindow::onSelectAllButtonClicked);
+    connect(deselectAllButton, &QPushButton::clicked, this, &MainWindow::onDeselectAllButtonClicked);
     connect(startButton, &QPushButton::clicked, this, &MainWindow::onStartButtonClicked);
     connect(stopButton, &QPushButton::clicked, this, &MainWindow::onStopButtonClicked);
     connect(refreshButton, &QPushButton::clicked, this, &MainWindow::onRefreshButtonClicked);
@@ -49,6 +57,8 @@ MainWindow::MainWindow(QWidget *parent)
     buttonLayout1->setAlignment(Qt::AlignLeft);
     buttonLayout2->setAlignment(Qt::AlignLeft);
 
+    buttonLayout1->addWidget(selectAllButton);
+    buttonLayout2->addWidget(deselectAllButton);
     buttonLayout1->addWidget(startButton);
     buttonLayout2->addWidget(stopButton);
     buttonLayout1->addWidget(refreshButton);
@@ -89,6 +99,14 @@ void MainWindow::readWindowSizeFromConfig() {
     width = settings.value("width", 455).toInt();
     height = settings.value("height", 790).toInt();
     settings.endGroup();
+}
+
+void MainWindow::onSelectAllButtonClicked() {
+    controller->selectAll();
+}
+
+void MainWindow::onDeselectAllButtonClicked() {
+    controller->deselectAll();
 }
 
 void MainWindow::onStartButtonClicked() {

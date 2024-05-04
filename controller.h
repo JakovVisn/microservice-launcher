@@ -9,6 +9,8 @@ class Controller: public QWidget
 public:
     explicit Controller(Model* model);
 
+    void selectAll();
+    void deselectAll();
     void start(const QString& processName);
     void stop(const QString& processName);
     void refresh();

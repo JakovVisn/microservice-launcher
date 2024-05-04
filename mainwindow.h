@@ -21,6 +21,8 @@ public:
     ~MainWindow();
 
 private slots:
+    void onSelectAllButtonClicked();
+    void onDeselectAllButtonClicked();
     void onStartButtonClicked();
     void onStopButtonClicked();
     void onRefreshButtonClicked();
@@ -32,6 +34,8 @@ private:
     Model* model;
     Controller* controller;
 
+    QPushButton *selectAllButton;
+    QPushButton *deselectAllButton;
     QPushButton *startButton;
     QPushButton *stopButton;
     QPushButton *refreshButton;

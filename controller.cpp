@@ -106,3 +106,21 @@ void Controller::stopProcess(const QString& processName) const {
     ::kill(processId, SIGINT);
     qDebug() << "Sent SIGINT to stop process" << processName;
 }
+
+void Controller::selectAll() {
+    QMap<QString, QCheckBox*> checkBoxes = model->getCheckBoxes();
+    QMap<QString, QCheckBox*>::const_iterator iter;
+    for (iter = checkBoxes.constBegin(); iter != checkBoxes.constEnd(); ++iter) {
+        QCheckBox* checkBox = iter.value();
+        checkBox->setChecked(true);
+    }
+};
+
+void Controller::deselectAll() {
+    QMap<QString, QCheckBox*> checkBoxes = model->getCheckBoxes();
+    QMap<QString, QCheckBox*>::const_iterator iter;
+    for (iter = checkBoxes.constBegin(); iter != checkBoxes.constEnd(); ++iter) {
+        QCheckBox* checkBox = iter.value();
+        checkBox->setChecked(false);
+    }
+};
