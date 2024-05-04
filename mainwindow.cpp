@@ -11,7 +11,7 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    setWindowTitle("Microservice Launcher (V1.3.0)");
+    setWindowTitle("Microservice Launcher (V1.4.0)");
 
     model = new Model();
     controller = new Controller(model);
@@ -31,11 +31,17 @@ MainWindow::MainWindow(QWidget *parent)
     refreshButton = new QPushButton("Refresh", this);
     refreshButton->setFixedWidth(60);
 
+    searchLineEdit = new QLineEdit(this);
+    searchLineEdit->setPlaceholderText("Enter text to search");
+    searchLineEdit->setFocusPolicy(Qt::ClickFocus);
+
     connect(selectAllButton, &QPushButton::clicked, this, &MainWindow::onSelectAllButtonClicked);
     connect(deselectAllButton, &QPushButton::clicked, this, &MainWindow::onDeselectAllButtonClicked);
     connect(startButton, &QPushButton::clicked, this, &MainWindow::onStartButtonClicked);
     connect(stopButton, &QPushButton::clicked, this, &MainWindow::onStopButtonClicked);
     connect(refreshButton, &QPushButton::clicked, this, &MainWindow::onRefreshButtonClicked);
+    connect(searchLineEdit, &QLineEdit::textChanged, this, &MainWindow::onSearchLineEditTextChanged);
+    connect(searchLineEdit, &QLineEdit::editingFinished, this, &MainWindow::onSearchLineEditEditingFinished);
 
     QVBoxLayout *mainLayout = new QVBoxLayout(ui->centralwidget);
     mainLayout->setSpacing(0);
@@ -53,6 +59,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     QHBoxLayout *buttonLayout1 = new QHBoxLayout;
     QHBoxLayout *buttonLayout2 = new QHBoxLayout;
+    QHBoxLayout *searchLayout = new QHBoxLayout;
 
     buttonLayout1->setAlignment(Qt::AlignLeft);
     buttonLayout2->setAlignment(Qt::AlignLeft);
@@ -63,8 +70,11 @@ MainWindow::MainWindow(QWidget *parent)
     buttonLayout2->addWidget(stopButton);
     buttonLayout1->addWidget(refreshButton);
 
+    searchLayout->addWidget(searchLineEdit);
+
     mainLayout->addLayout(buttonLayout1);
     mainLayout->addLayout(buttonLayout2);
+    mainLayout->addLayout(searchLayout);
     mainLayout->addWidget(scrollArea);
 
     QMap<QString, QCheckBox*> checkBoxes = model->getCheckBoxes();
@@ -167,4 +177,26 @@ void MainWindow::loadActionsFromConfigFile() {
 
 void MainWindow::onSaveActionClicked(const QString &actionName) {
     controller->selectDetermined(actionName);
+}
+
+void MainWindow::onSearchLineEditTextChanged() {
+    QString searchText = searchLineEdit->text();
+    QMap<QString, QCheckBox*> checkBoxes = model->getCheckBoxes();
+    QMap<QString, QCheckBox*>::const_iterator iter;
+
+    for (iter = checkBoxes.constBegin(); iter != checkBoxes.constEnd(); ++iter) {
+        QCheckBox* checkBox = iter.value();
+        if (searchText.isEmpty()) {
+            checkBox->setStyleSheet("");
+        } else if (checkBox->text().contains(searchText, Qt::CaseInsensitive)) {
+            checkBox->setStyleSheet("color: red;");
+        } else {
+            checkBox->setStyleSheet("");
+        }
+    }
+}
+
+void MainWindow::onSearchLineEditEditingFinished() {
+    searchLineEdit->clear();
+    onSearchLineEditTextChanged();
 }

@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QLineEdit>
 #include <QtWidgets/qpushbutton.h>
 
 #include "controller.h"
@@ -27,6 +28,8 @@ private slots:
     void onStopButtonClicked();
     void onRefreshButtonClicked();
     void onSaveActionClicked(const QString &actionName);
+    void onSearchLineEditTextChanged();
+    void onSearchLineEditEditingFinished();
 
 private:
     void readWindowSizeFromConfig();
@@ -41,6 +44,8 @@ private:
     QPushButton *startButton;
     QPushButton *stopButton;
     QPushButton *refreshButton;
+
+    QLineEdit *searchLineEdit;
 
     int width;
     int height;
