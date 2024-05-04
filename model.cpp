@@ -1,14 +1,28 @@
 #include "model.h"
 
 #include <QDir>
+#include <QRegularExpression>
+#include <QProcessEnvironment>
 #include <QSettings>
 #include <QCoreApplication>
+#include <QTcpSocket>
 
 Model::Model(): defaultConfigFile(createEmptyFile("/config.ini")), directory(findDirectory()) {
     const QStringList folderNames = getFolderNames();
     for (const QString &folderName : folderNames) {
-        QCheckBox *checkBox = new QCheckBox(folderName);
+        QString shortName = readApplicationShortNameFromFile(getDirectory() + "/" + folderName);
+        shortNames.insert(folderName, shortName);
+
+        QVector<int> ports = getServicePorts(folderName);
+        servicePorts.insert(folderName, ports);
+
+        QString folderInfo = getFolderInfo(folderName);
+        QCheckBox *checkBox = new QCheckBox(folderName + folderInfo);
         checkBoxes.insert(folderName, checkBox);
+
+        QCheckBox *statusCheckbox = new QCheckBox();
+        statusCheckbox->setEnabled(false);
+        checkBoxStatuses.insert(folderName, statusCheckbox);
     }
 }
 
@@ -43,6 +57,124 @@ QStringList Model::getFolderNames() const {
 
     folderNames.sort();
     return folderNames;
+}
+
+QString Model::getDirectory() const
+{
+    return directory;
+}
+
+QString Model::readApplicationShortNameFromFile(const QString& filePath) const {
+    QStringList args;
+    args << filePath;
+
+    QProcess process;
+    process.start(QCoreApplication::applicationDirPath() + "/" + "short_name.sh", args);
+    if (!process.waitForStarted() || !process.waitForFinished()) {
+        qWarning() << "Failed to execute script:" << process.errorString();
+        return QString();
+    }
+
+    QString output = process.readAllStandardOutput();
+    return output.trimmed();
+}
+
+int Model::getPidByName(const QString& processName) const {
+    QString cmd = "pgrep -x " + processName;
+    std::array<char, 128> buffer;
+    std::string result;
+    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.toStdString().c_str(), "r"), pclose);
+    if (!pipe) {
+        throw std::runtime_error("popen() failed!");
+    }
+
+    while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
+        result += buffer.data();
+    }
+
+    if (!result.empty()) {
+        return std::stoi(result);
+    } else {
+        return -1; // Return -1 if process is not found
+    }
+}
+
+bool Model::checkDebug(const QString& processName) const {
+    QVector<int> ports = servicePorts.value(processName);
+
+    if (ports.isEmpty()) {
+        qDebug() << "No ports found for folder" << processName;
+        return false;
+    }
+
+    for (int port : ports) {
+        QTcpSocket socket;
+        socket.connectToHost("127.0.0.1", port);
+        if (socket.waitForConnected(1000)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+QVector<int> Model::getServicePorts(const QString& folderName) const {
+    QVector<int> ports;
+
+    QString path = getDirectory()+ "/"+ folderName;
+    QString prefix = shortNames.value(folderName);
+
+    QStringList args;
+    args << path << prefix;
+
+    QProcess process;
+    process.start(QCoreApplication::applicationDirPath() + "/" + "ports.sh", args);
+    if (!process.waitForStarted() || !process.waitForFinished()) {
+        qWarning() << "Failed to execute script:" << process.errorString();
+        return ports;
+    }
+
+    QString output = process.readAllStandardOutput().trimmed();
+
+    QStringList parts = output.split(" ");
+
+    for (const QString& part : parts) {
+        bool ok;
+        int port = part.toInt(&ok);
+        if (ok) ports.append(port);
+    }
+
+    return ports;
+}
+
+QString Model::getFolderInfo(const QString& folderName) const {
+    QString shortName = shortNames.value(folderName);
+    QVector<int> ports = servicePorts.value(folderName);
+
+    QString portText;
+    for (int i = 0; i < ports.size(); i++) {
+        portText += QString::number(ports[i]);
+
+        // Add "/" separator if it's not the last port
+        if (i < ports.size() - 1) {
+            portText += " / ";
+        }
+    }
+
+    QString folderInfo;
+    if (!shortName.isEmpty()) {
+        folderInfo += " ("+ shortName +"):";
+    }
+
+    if (!folderInfo.isEmpty() && !portText.isEmpty()) {
+        folderInfo += " ";
+    }
+
+    if (!portText.isEmpty()) {
+        folderInfo += portText;
+    }
+
+    return folderInfo;
 }
 
 QMap<QString, QCheckBox*> Model::getCheckBoxes() const {
@@ -96,4 +228,21 @@ QStringList Model::readExcludedFoldersFromConfig() const {
     settings.endGroup();
 
     return excludedFolders;
+}
+
+QString Model::getShortNameByName(const QString fileName) const {
+    return shortNames.value(fileName);
+}
+
+bool Model::isServiceRunning(const QString& processName) const {
+    int pid = getPidByName(processName);
+    if (pid != -1) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+QMap<QString, QCheckBox*> Model::getCheckBoxStatuses() const {
+    return checkBoxStatuses;
 }

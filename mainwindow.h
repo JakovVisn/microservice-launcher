@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QtWidgets/qpushbutton.h>
 
 #include "controller.h"
 
@@ -19,12 +20,19 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+private slots:
+    void onStartButtonClicked();
+    void onRefreshButtonClicked();
+
 private:
     void readWindowSizeFromConfig();
 
     Ui::MainWindow *ui;
     Model* model;
     Controller* controller;
+
+    QPushButton *startButton;
+    QPushButton *refreshButton;
 
     int width;
     int height;
