@@ -10,6 +10,7 @@ public:
     explicit Controller(Model* model);
 
     void start(const QString& processName);
+    void stop(const QString& processName);
     void refresh();
     void refreshCheckboxState(const QString& processName);
 
@@ -20,6 +21,7 @@ private:
 
     void loadDelaysFromConfig();
     void loadCommandsFromConfig();
+    void stopProcess(const QString& processName) const;
 };
 
 #endif // CONTROLLER_H

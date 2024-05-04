@@ -246,3 +246,37 @@ bool Model::isServiceRunning(const QString& processName) const {
 QMap<QString, QCheckBox*> Model::getCheckBoxStatuses() const {
     return checkBoxStatuses;
 }
+
+int Model::getProcessId(const QString& processName) const {
+    int pid = getPidByName(processName);
+    if (pid != -1) {
+        return pid;
+    }
+
+    QVector<int> ports = servicePorts.value(processName);
+
+    if (ports.isEmpty()) {
+        qDebug() << "No ports found for folder" << processName;
+        return -1;
+    }
+
+    for (int port : ports) {
+        QString cmd = "lsof -i :" + QString::number(port) + " -t";
+        std::array<char, 128> buffer;
+        std::string result;
+        std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.toStdString().c_str(), "r"), pclose);
+        if (!pipe) {
+            throw std::runtime_error("popen() failed!");
+        }
+
+        while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
+            result += buffer.data();
+        }
+
+        if (!result.empty()) {
+            return std::stoi(result);
+        }
+    }
+
+    return -1; // Return -1 if process is not found on any port
+}

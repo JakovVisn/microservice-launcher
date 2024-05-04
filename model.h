@@ -15,6 +15,7 @@ public:
     QString getShortNameByName(const QString fileName) const;
     bool isServiceRunning(const QString& processName) const;
     QMap<QString, QCheckBox*> getCheckBoxStatuses() const;
+    int getProcessId(const QString& processName) const;
 
 private:
     QString getFolderInfo(const QString& folderName) const;

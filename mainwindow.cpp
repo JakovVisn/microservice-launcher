@@ -11,7 +11,7 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    setWindowTitle("Microservice Launcher (V1.0.0)");
+    setWindowTitle("Microservice Launcher (V1.1.0)");
 
     model = new Model();
     controller = new Controller(model);
@@ -19,10 +19,14 @@ MainWindow::MainWindow(QWidget *parent)
     startButton = new QPushButton("Start", this);
     startButton->setFixedWidth(40);
 
+    stopButton = new QPushButton("Stop", this);
+    stopButton->setFixedWidth(40);
+
     refreshButton = new QPushButton("Refresh", this);
     refreshButton->setFixedWidth(60);
 
     connect(startButton, &QPushButton::clicked, this, &MainWindow::onStartButtonClicked);
+    connect(stopButton, &QPushButton::clicked, this, &MainWindow::onStopButtonClicked);
     connect(refreshButton, &QPushButton::clicked, this, &MainWindow::onRefreshButtonClicked);
 
     QVBoxLayout *mainLayout = new QVBoxLayout(ui->centralwidget);
@@ -40,13 +44,17 @@ MainWindow::MainWindow(QWidget *parent)
     scrollArea->setWidget(scrollContent);
 
     QHBoxLayout *buttonLayout1 = new QHBoxLayout;
+    QHBoxLayout *buttonLayout2 = new QHBoxLayout;
 
     buttonLayout1->setAlignment(Qt::AlignLeft);
+    buttonLayout2->setAlignment(Qt::AlignLeft);
 
     buttonLayout1->addWidget(startButton);
+    buttonLayout2->addWidget(stopButton);
     buttonLayout1->addWidget(refreshButton);
 
     mainLayout->addLayout(buttonLayout1);
+    mainLayout->addLayout(buttonLayout2);
     mainLayout->addWidget(scrollArea);
 
     QMap<QString, QCheckBox*> checkBoxes = model->getCheckBoxes();
@@ -93,6 +101,18 @@ void MainWindow::onStartButtonClicked() {
             qDebug() << "Trying to launch service:" << folderName;
 
             controller->start(folderName);
+        }
+    }
+}
+
+void MainWindow::onStopButtonClicked() {
+    QMap<QString, QCheckBox*> checkBoxes = model->getCheckBoxes();
+    QMap<QString, QCheckBox*>::const_iterator iter;
+    for (iter = checkBoxes.constBegin(); iter != checkBoxes.constEnd(); ++iter) {
+        QCheckBox* checkBox = iter.value();
+        if (checkBox->isChecked()) {
+            QString processName = iter.key();
+            controller->stop(processName);
         }
     }
 }

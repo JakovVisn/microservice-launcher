@@ -1,5 +1,7 @@
 #include "controller.h"
 
+#include <csignal>
+
 #include <QtCore/qprocess.h>
 #include <QSettings>
 #include <QCoreApplication>
@@ -70,6 +72,11 @@ void Controller::start(const QString& processName) {
     }
 }
 
+void Controller::stop(const QString& processName) {
+    qDebug() << "Trying to stop service:" << processName;
+    stopProcess(processName);
+};
+
 void Controller::refreshCheckboxState(const QString& processName) {
     QMap<QString, QCheckBox*> checkBoxStatuses = model->getCheckBoxStatuses();
     QCheckBox* statusCheckbox = checkBoxStatuses.value(processName);
@@ -88,3 +95,14 @@ void Controller::refresh() {
         refreshCheckboxState(iter.key());
     }
 };
+
+void Controller::stopProcess(const QString& processName) const {
+    int processId = model->getProcessId(processName);
+    if (processId == -1) {
+        qDebug() << "Process" << processName << "not found. Cannot stop.";
+        return;
+    }
+
+    ::kill(processId, SIGINT);
+    qDebug() << "Sent SIGINT to stop process" << processName;
+}

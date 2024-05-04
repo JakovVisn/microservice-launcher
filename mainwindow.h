@@ -22,6 +22,7 @@ public:
 
 private slots:
     void onStartButtonClicked();
+    void onStopButtonClicked();
     void onRefreshButtonClicked();
 
 private:
@@ -32,6 +33,7 @@ private:
     Controller* controller;
 
     QPushButton *startButton;
+    QPushButton *stopButton;
     QPushButton *refreshButton;
 
     int width;
