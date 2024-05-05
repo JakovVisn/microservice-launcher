@@ -35,7 +35,7 @@ QString Model::findDirectory() const {
     QString directory = readDirectory();
     QDir initialDir(directory);
     if (directory.isEmpty() || !initialDir.exists()) {
-        qDebug() << "Directory does not exist or is empty.";
+        qDebug() << "Directory "<< directory << " does not exist or is empty.";
         throw std::runtime_error("Directory does not exist or is empty.");
     }
 

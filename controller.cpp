@@ -47,29 +47,10 @@ void Controller::start(const QString& processName) {
         return;
     }
 
-    qDebug() << "Creating a new terminal process to execute the 'make run' command in a new terminal on macOS for" << processName;
-
-    QString newTabDelay = QString::number(delays.value("newTab", 1));
-    qDebug() << "New tab delay:" << newTabDelay;
-
-    QString command = commands.value("start", "make run");
-
-    qDebug() << "Command:" << command;
-
-    QString workingDirectory = model->getDirectory();
-
-    QProcess process;
     QStringList args;
-    args << processName << workingDirectory << command << newTabDelay << model->getShortNameByName(processName);
-    process.start(QCoreApplication::applicationDirPath() + "/" + "start.sh", args);
-    process.waitForFinished();
+    args << processName << model->getShortNameByName(processName);
 
-    if (process.exitCode() == 0) {
-        qDebug() << "Command executed successfully.";
-    } else {
-        QString errorOutput = process.readAllStandardError();
-        qDebug() << "Error executing shell script:" << errorOutput;
-    }
+    executeScript("Start", args);
 }
 
 void Controller::stop(const QString& processName) {
@@ -138,4 +119,38 @@ void Controller::selectDetermined(const QString &actionName) {
             checkBox->setChecked(true);
         }
     }
+}
+
+void Controller::executeScript(const QString &commandName, const QStringList &additionalArgs) {
+    QSettings settings(model->getConfigFile(), QSettings::IniFormat);
+    settings.beginGroup("ScriptNames");
+    QString scriptName = settings.value(commandName).toString();
+    settings.endGroup();
+
+    QString command = commands.value(commandName);
+    QString newTabDelay = QString::number(delays.value("newTab", 0));
+    QString customDelay = QString::number(delays.value(commandName));
+    QString workingDirectory = model->getDirectory();
+
+    QProcess process;
+    QStringList args;
+    args << command << newTabDelay << customDelay << workingDirectory << additionalArgs;
+    qDebug() << "args:" << args;
+    process.start(QCoreApplication::applicationDirPath() + "/" + scriptName, args);
+    process.waitForFinished();
+
+    if (process.exitCode() == 0) {
+        qDebug() << "Command executed successfully.";
+    } else {
+        QString errorOutput = process.readAllStandardError();
+        qDebug() << "Error executing shell script:" << errorOutput;
+    }
+}
+
+void Controller::setDelay(const QString &commandName, const float &delay){
+    delays.insert(commandName, delay);
+}
+
+void Controller::setCommand(const QString &commandName, const QString &command){
+    commands.insert(commandName, command);
 }

@@ -16,6 +16,9 @@ public:
     void refresh();
     void refreshCheckboxState(const QString& processName);
     void selectDetermined(const QString &actionName);
+    void executeScript(const QString &commandName, const QStringList &additionalArgs = QStringList());
+    void setDelay(const QString &commandName, const float &delay);
+    void setCommand(const QString &commandName, const QString &command);
 
 private:
     Model* model;

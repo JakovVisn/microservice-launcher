@@ -30,10 +30,13 @@ private slots:
     void onSaveActionClicked(const QString &actionName);
     void onSearchLineEditTextChanged();
     void onSearchLineEditEditingFinished();
+    void onAddCommandClicked();
+    void onCustomButtonClicked(const QString &commandName);
 
 private:
     void readWindowSizeFromConfig();
     void loadActionsFromConfigFile();
+    void loadCommandsFromConfigFile();
     void saveCheckBoxStateToFile();
 
     Ui::MainWindow *ui;
@@ -47,6 +50,10 @@ private:
     QPushButton *refreshButton;
 
     QLineEdit *searchLineEdit;
+
+    QMenuBar *menuBar;
+    QMenu *fileMenu;
+    QMenu *commandMenu;
 
     int width;
     int height;

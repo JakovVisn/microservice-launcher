@@ -4,6 +4,10 @@
 #include <QVBoxLayout>
 #include <QScrollArea>
 #include <QSettings>
+#include <QInputDialog>
+#include <QMessageBox>
+#include <QFormLayout>
+#include <QDoubleValidator>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -11,25 +15,16 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    setWindowTitle("Microservice Launcher (V1.5.0)");
+    setWindowTitle("Microservice Launcher (V1.6.0)");
 
     model = new Model();
     controller = new Controller(model);
 
     selectAllButton = new QPushButton("Select All", this);
-    selectAllButton->setFixedWidth(85);
-
     deselectAllButton = new QPushButton("Deselect All", this);
-    deselectAllButton->setFixedWidth(85);
-
     startButton = new QPushButton("Start", this);
-    startButton->setFixedWidth(40);
-
     stopButton = new QPushButton("Stop", this);
-    stopButton->setFixedWidth(40);
-
     refreshButton = new QPushButton("Refresh", this);
-    refreshButton->setFixedWidth(60);
 
     searchLineEdit = new QLineEdit(this);
     searchLineEdit->setPlaceholderText("Enter text to search");
@@ -60,16 +55,14 @@ MainWindow::MainWindow(QWidget *parent)
     scrollArea->setWidget(scrollContent);
 
     QHBoxLayout *buttonLayout1 = new QHBoxLayout;
-    QHBoxLayout *buttonLayout2 = new QHBoxLayout;
     QHBoxLayout *searchLayout = new QHBoxLayout;
 
     buttonLayout1->setAlignment(Qt::AlignLeft);
-    buttonLayout2->setAlignment(Qt::AlignLeft);
 
     buttonLayout1->addWidget(selectAllButton);
-    buttonLayout2->addWidget(deselectAllButton);
+    buttonLayout1->addWidget(deselectAllButton);
     buttonLayout1->addWidget(startButton);
-    buttonLayout2->addWidget(stopButton);
+    buttonLayout1->addWidget(stopButton);
     buttonLayout1->addWidget(refreshButton);
 
     searchLayout->addWidget(searchLineEdit);
@@ -84,7 +77,6 @@ MainWindow::MainWindow(QWidget *parent)
     settings.endGroup();
 
     mainLayout->addLayout(buttonLayout1);
-    mainLayout->addLayout(buttonLayout2);
     mainLayout->addLayout(searchLayout);
     mainLayout->addWidget(scrollArea);
 
@@ -115,7 +107,99 @@ MainWindow::MainWindow(QWidget *parent)
     readWindowSizeFromConfig();
     resize(width, height);
 
+    menuBar = new QMenuBar(this);
+    setMenuBar(menuBar);
+
+    fileMenu = new QMenu("Save", this);
+    commandMenu = new QMenu("Additional Commands", this);
+
     loadActionsFromConfigFile();
+    loadCommandsFromConfigFile();
+}
+
+void MainWindow::onAddCommandClicked() {
+    QDialog dialog(this);
+    dialog.setWindowTitle("Add New Command");
+
+    QFormLayout formLayout(&dialog);
+
+    QLineEdit *nameLineEdit = new QLineEdit(&dialog);
+    formLayout.addRow("Enter the name of the new command:", nameLineEdit);
+
+    QLineEdit *scriptLineEdit = new QLineEdit(&dialog);
+    formLayout.addRow("Enter the script name for the command:", scriptLineEdit);
+
+    QLineEdit *commandLineEdit = new QLineEdit(&dialog);
+    commandLineEdit->setPlaceholderText("Can be empty");
+    formLayout.addRow("Enter the command:", commandLineEdit);
+
+    QLineEdit *delayLineEdit = new QLineEdit(&dialog);
+    QDoubleValidator *validator = new QDoubleValidator(delayLineEdit);
+    validator->setBottom(0.0);
+    delayLineEdit->setValidator(validator);
+    delayLineEdit->setPlaceholderText("Can be empty");
+    formLayout.addRow("Enter the delay for the command:", delayLineEdit);
+
+    QCheckBox *executeForSelectedCheckBox = new QCheckBox("Execute for selected services", &dialog);
+    formLayout.addRow(executeForSelectedCheckBox);
+
+    QDialogButtonBox buttonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, Qt::Horizontal, &dialog);
+    formLayout.addRow(&buttonBox);
+
+    QObject::connect(&buttonBox, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+    QObject::connect(&buttonBox, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+
+    if (dialog.exec() != QDialog::Accepted) {
+        return;
+    }
+
+    QString newCommandName = nameLineEdit->text();
+    QString scriptName = scriptLineEdit->text();
+    QString command = commandLineEdit->text();
+    QString delay = delayLineEdit->text();
+    bool executeForSelectedEnabled = executeForSelectedCheckBox->isChecked();
+
+    if (newCommandName.isEmpty()) {
+        return;
+    }
+
+    if (scriptName.isEmpty()) {
+        return;
+    }
+
+    QSettings settings(model->getConfigFile(), QSettings::IniFormat);
+
+    settings.beginGroup("AdditionalCommands");
+    QString newCommandKey = "Command" + QString::number(settings.childKeys().count() + 1);
+    settings.setValue(newCommandKey, newCommandName);
+    settings.endGroup();
+
+    settings.beginGroup("ScriptNames");
+    settings.setValue(newCommandName, scriptName);
+    settings.endGroup();
+
+    settings.beginGroup("ExecuteForSelected");
+    settings.setValue(newCommandName, executeForSelectedEnabled);
+    settings.endGroup();
+
+    if (!delay.isEmpty()){
+        settings.beginGroup("Delays");
+        settings.setValue(newCommandName, delay);
+        settings.endGroup();
+
+        controller->setDelay(newCommandName, delay.toFloat());
+    }
+
+    if (!command.isEmpty()) {
+        settings.beginGroup("Commands");
+        settings.setValue(newCommandName, command);
+        settings.endGroup();
+
+        controller->setCommand(newCommandName, command);
+    }
+
+    commandMenu->clear();
+    loadCommandsFromConfigFile();
 }
 
 MainWindow::~MainWindow() {
@@ -127,7 +211,7 @@ MainWindow::~MainWindow() {
 void MainWindow::readWindowSizeFromConfig() {
     QSettings settings(model->getConfigFile(), QSettings::IniFormat);
     settings.beginGroup("WindowSize");
-    width = settings.value("width", 455).toInt();
+    width = settings.value("width", 470).toInt();
     height = settings.value("height", 790).toInt();
     settings.endGroup();
 }
@@ -174,7 +258,6 @@ void MainWindow::loadActionsFromConfigFile() {
     QSettings settings(model->getConfigFile(), QSettings::IniFormat);
     settings.beginGroup("Save");
     QStringList keys = settings.childKeys();
-    QMenu *fileMenu = new QMenu("Save", this);
 
     for (const QString& key : keys) {
         QString actionName = settings.value(key).toString();
@@ -189,9 +272,56 @@ void MainWindow::loadActionsFromConfigFile() {
 
     settings.endGroup();
 
-    QMenuBar *menuBar = new QMenuBar(this);
     menuBar->addMenu(fileMenu);
-    setMenuBar(menuBar);
+}
+
+void MainWindow::loadCommandsFromConfigFile() {
+    QSettings settings(model->getConfigFile(), QSettings::IniFormat);
+    settings.beginGroup("AdditionalCommands");
+    QStringList commands = settings.childKeys();
+
+    for (const QString& key : commands) {
+        QString commandName = settings.value(key).toString();
+        QAction *action = new QAction(commandName, this);
+
+        connect(action, &QAction::triggered, this, [this, commandName]() {
+            onCustomButtonClicked(commandName);
+        });
+
+        commandMenu->addAction(action);
+    }
+
+    settings.endGroup();
+
+    QAction *addCommandAction = new QAction("Add New Command", this);
+    connect(addCommandAction, &QAction::triggered, this, &MainWindow::onAddCommandClicked);
+    commandMenu->addAction(addCommandAction);
+
+    menuBar->addMenu(commandMenu);
+}
+
+void MainWindow::onCustomButtonClicked(const QString &commandName) {
+    QSettings settings(model->getConfigFile(), QSettings::IniFormat);
+    settings.beginGroup("ExecuteForSelected");
+    bool executeForSelectedEnabled = settings.value(commandName, false).toBool();
+    settings.endGroup();
+
+    if (!executeForSelectedEnabled) {
+        controller->executeScript(commandName);
+    } else {
+        QMap<QString, QCheckBox*> checkBoxes = model->getCheckBoxes();
+        QMap<QString, QCheckBox*>::const_iterator iter;
+        for (iter = checkBoxes.constBegin(); iter != checkBoxes.constEnd(); ++iter) {
+            QCheckBox* checkBox = iter.value();
+            if (checkBox->isChecked()) {
+                QString processName = iter.key();
+                QStringList args;
+                args << processName << model->getShortNameByName(processName);
+
+                controller->executeScript(commandName, args);
+            }
+        }
+    }
 }
 
 void MainWindow::onSaveActionClicked(const QString &actionName) {
