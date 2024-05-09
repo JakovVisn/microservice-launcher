@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QVBoxLayout>
 #include <QLineEdit>
 #include <QtWidgets/qpushbutton.h>
 
@@ -35,25 +36,24 @@ private slots:
 
 private:
     void readWindowSizeFromConfig();
-    void loadActionsFromConfigFile();
+    void loadSettings();
+    void loadSavesFromConfigFile();
     void loadCommandsFromConfigFile();
+    void loadMainWindowButtonsFromConfigFile();
     void saveCheckBoxStateToFile();
 
     Ui::MainWindow *ui;
     Model* model;
     Controller* controller;
 
-    QPushButton *selectAllButton;
-    QPushButton *deselectAllButton;
-    QPushButton *startButton;
-    QPushButton *stopButton;
-    QPushButton *refreshButton;
-
     QLineEdit *searchLineEdit;
 
+    QAction *saveCheckBox;
+    QVBoxLayout *mainLayout;
     QMenuBar *menuBar;
-    QMenu *fileMenu;
+    QMenu *saveMenu;
     QMenu *commandMenu;
+    QMenu *settingsMenu;
 
     int width;
     int height;

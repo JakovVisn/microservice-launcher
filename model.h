@@ -17,7 +17,6 @@ public:
     QMap<QString, QCheckBox*> getCheckBoxStatuses() const;
     int getProcessId(const QString& processName) const;
     QString getSaveFile() const;
-    QCheckBox& getSaveCheckBox();
 
 private:
     QString getFolderInfo(const QString& folderName) const;
@@ -37,8 +36,6 @@ private:
     QMap<QString, QCheckBox*> checkBoxStatuses;
     QMap<QString, QString> shortNames;
     QMap<QString, QVector<int>> servicePorts;
-
-    QCheckBox saveCheckBox;
 };
 
 #endif // MODEL_H

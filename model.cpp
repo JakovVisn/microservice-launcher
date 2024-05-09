@@ -1,14 +1,16 @@
 #include "model.h"
 
 #include <QDir>
-#include <QRegularExpression>
 #include <QProcessEnvironment>
 #include <QSettings>
 #include <QCoreApplication>
 #include <QTcpSocket>
 
-Model::Model(): defaultConfigFile(createEmptyFile("/config.ini")), defaultSaveFile(createEmptyFile("/save.ini")), directory(findDirectory()) {
-    saveCheckBox.setText("Save&&Exit");
+Model::Model()
+    : defaultConfigFile(createEmptyFile("/config.ini"))
+    , defaultSaveFile(createEmptyFile("/save.ini"))
+    , directory(findDirectory())
+{
     const QStringList folderNames = getFolderNames();
     for (const QString &folderName : folderNames) {
         QString shortName = readApplicationShortNameFromFile(getDirectory() + "/" + folderName);
@@ -284,8 +286,4 @@ int Model::getProcessId(const QString& processName) const {
 
 QString Model::getSaveFile() const {
     return defaultSaveFile;
-}
-
-QCheckBox& Model::getSaveCheckBox(){
-    return saveCheckBox;
 }

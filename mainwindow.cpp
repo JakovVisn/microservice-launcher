@@ -1,7 +1,6 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
-#include <QVBoxLayout>
 #include <QScrollArea>
 #include <QSettings>
 #include <QInputDialog>
@@ -15,32 +14,36 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    setWindowTitle("Microservice Launcher (V1.6.0)");
+    setWindowTitle("Microservice Launcher (V1.7.0)");
 
     model = new Model();
     controller = new Controller(model);
-
-    selectAllButton = new QPushButton("Select All", this);
-    deselectAllButton = new QPushButton("Deselect All", this);
-    startButton = new QPushButton("Start", this);
-    stopButton = new QPushButton("Stop", this);
-    refreshButton = new QPushButton("Refresh", this);
 
     searchLineEdit = new QLineEdit(this);
     searchLineEdit->setPlaceholderText("Enter text to search");
     searchLineEdit->setFocusPolicy(Qt::ClickFocus);
 
-    connect(selectAllButton, &QPushButton::clicked, this, &MainWindow::onSelectAllButtonClicked);
-    connect(deselectAllButton, &QPushButton::clicked, this, &MainWindow::onDeselectAllButtonClicked);
-    connect(startButton, &QPushButton::clicked, this, &MainWindow::onStartButtonClicked);
-    connect(stopButton, &QPushButton::clicked, this, &MainWindow::onStopButtonClicked);
-    connect(refreshButton, &QPushButton::clicked, this, &MainWindow::onRefreshButtonClicked);
+    settingsMenu = new QMenu("Settings", this);
+    saveMenu = new QMenu("Save", this);
+    commandMenu = new QMenu("Additional Commands", this);
+
+    menuBar = new QMenuBar(this);
+    setMenuBar(menuBar);
+
+    menuBar->addMenu(settingsMenu);
+    menuBar->addMenu(saveMenu);
+    menuBar->addMenu(commandMenu);
+
+    loadSavesFromConfigFile();
+    loadCommandsFromConfigFile();
+    loadSettings();
+
     connect(searchLineEdit, &QLineEdit::textChanged, this, &MainWindow::onSearchLineEditTextChanged);
     connect(searchLineEdit, &QLineEdit::editingFinished, this, &MainWindow::onSearchLineEditEditingFinished);
 
     connect(qApp, &QApplication::aboutToQuit, this, &MainWindow::saveCheckBoxStateToFile);
 
-    QVBoxLayout *mainLayout = new QVBoxLayout(ui->centralwidget);
+    mainLayout = new QVBoxLayout(ui->centralwidget);
     mainLayout->setSpacing(0);
 
     QVBoxLayout *contentLayout = new QVBoxLayout;
@@ -54,32 +57,15 @@ MainWindow::MainWindow(QWidget *parent)
     scrollArea->setWidgetResizable(true);
     scrollArea->setWidget(scrollContent);
 
-    QHBoxLayout *buttonLayout1 = new QHBoxLayout;
     QHBoxLayout *searchLayout = new QHBoxLayout;
-
-    buttonLayout1->setAlignment(Qt::AlignLeft);
-
-    buttonLayout1->addWidget(selectAllButton);
-    buttonLayout1->addWidget(deselectAllButton);
-    buttonLayout1->addWidget(startButton);
-    buttonLayout1->addWidget(stopButton);
-    buttonLayout1->addWidget(refreshButton);
 
     searchLayout->addWidget(searchLineEdit);
 
-    QSettings settings(model->getSaveFile(), QSettings::IniFormat);
-
-    settings.beginGroup("CheckBoxSaveState");
-    bool isSaveChecked = settings.value("save", false).toBool();
-    model->getSaveCheckBox().setChecked(isSaveChecked);
-    buttonLayout1->addWidget(&model->getSaveCheckBox());
-
-    settings.endGroup();
-
-    mainLayout->addLayout(buttonLayout1);
+    loadMainWindowButtonsFromConfigFile();
     mainLayout->addLayout(searchLayout);
     mainLayout->addWidget(scrollArea);
 
+    QSettings settings(model->getSaveFile(), QSettings::IniFormat);
     settings.beginGroup("CheckBoxState");
     QMap<QString, QCheckBox*> checkBoxes = model->getCheckBoxes();
     QMap<QString, QCheckBox*> checkBoxStatuses = model->getCheckBoxStatuses();
@@ -87,7 +73,7 @@ MainWindow::MainWindow(QWidget *parent)
     for (iter = checkBoxes.constBegin(); iter != checkBoxes.constEnd(); ++iter) {
         const QString &folderName = iter.key();
 
-        if (isSaveChecked) {
+        if (saveCheckBox->isChecked()) {
             bool isChecked = settings.value(folderName, false).toBool();
             iter.value()->setChecked(isChecked);
         }
@@ -106,15 +92,6 @@ MainWindow::MainWindow(QWidget *parent)
 
     readWindowSizeFromConfig();
     resize(width, height);
-
-    menuBar = new QMenuBar(this);
-    setMenuBar(menuBar);
-
-    fileMenu = new QMenu("Save", this);
-    commandMenu = new QMenu("Additional Commands", this);
-
-    loadActionsFromConfigFile();
-    loadCommandsFromConfigFile();
 }
 
 void MainWindow::onAddCommandClicked() {
@@ -254,7 +231,25 @@ void MainWindow::onRefreshButtonClicked() {
     controller->refresh();
 }
 
-void MainWindow::loadActionsFromConfigFile() {
+void MainWindow::loadSettings() {
+    QSettings settings(model->getSaveFile(), QSettings::IniFormat);
+
+    settings.beginGroup("CheckBoxSaveState");
+    bool isSaveChecked = settings.value("save", false).toBool();
+    settings.endGroup();
+
+    saveCheckBox = new QAction("Save&&Exit", this);
+    saveCheckBox->setCheckable(true);
+    saveCheckBox->setChecked(isSaveChecked);
+
+    settingsMenu->addAction(saveCheckBox);
+
+    QAction *addCommandAction = new QAction("Add New Command", this);
+    connect(addCommandAction, &QAction::triggered, this, &MainWindow::onAddCommandClicked);
+    settingsMenu->addAction(addCommandAction);
+}
+
+void MainWindow::loadSavesFromConfigFile() {
     QSettings settings(model->getConfigFile(), QSettings::IniFormat);
     settings.beginGroup("Save");
     QStringList keys = settings.childKeys();
@@ -267,12 +262,10 @@ void MainWindow::loadActionsFromConfigFile() {
             onSaveActionClicked(actionName);
         });
 
-        fileMenu->addAction(action);
+        saveMenu->addAction(action);
     }
 
     settings.endGroup();
-
-    menuBar->addMenu(fileMenu);
 }
 
 void MainWindow::loadCommandsFromConfigFile() {
@@ -292,12 +285,41 @@ void MainWindow::loadCommandsFromConfigFile() {
     }
 
     settings.endGroup();
+}
 
-    QAction *addCommandAction = new QAction("Add New Command", this);
-    connect(addCommandAction, &QAction::triggered, this, &MainWindow::onAddCommandClicked);
-    commandMenu->addAction(addCommandAction);
+void MainWindow::loadMainWindowButtonsFromConfigFile() {
+    QSettings settings(model->getConfigFile(), QSettings::IniFormat);
+    settings.beginGroup("MainWindowButtons");
+    QStringList mainWindowButtonsGroups = settings.childKeys();
+    for (const QString& group : mainWindowButtonsGroups) {
+        QStringList commandNames = settings.value(group).toStringList();
+        QHBoxLayout* groupLayout = new QHBoxLayout;
+        for (const QString& commandName : commandNames) {
+            QPushButton *pushButton = new QPushButton(commandName, this);
 
-    menuBar->addMenu(commandMenu);
+            if (commandName == "Select All") {
+                connect(pushButton, &QPushButton::clicked, this, &MainWindow::onSelectAllButtonClicked);
+            } else if (commandName == "Deselect All") {
+                connect(pushButton, &QPushButton::clicked, this, &MainWindow::onDeselectAllButtonClicked);
+            } else if (commandName == "Start") {
+                connect(pushButton, &QPushButton::clicked, this, &MainWindow::onStartButtonClicked);
+            } else if (commandName == "Stop") {
+                connect(pushButton, &QPushButton::clicked, this, &MainWindow::onStopButtonClicked);
+            } else if (commandName == "Refresh") {
+                connect(pushButton, &QPushButton::clicked, this, &MainWindow::onRefreshButtonClicked);
+            } else {
+                connect(pushButton, &QPushButton::clicked, this, [this, commandName]() {
+                    onCustomButtonClicked(commandName);
+                });
+            }
+
+            groupLayout->addWidget(pushButton);
+        }
+
+        mainLayout->addLayout(groupLayout);
+    }
+
+    settings.endGroup();
 }
 
 void MainWindow::onCustomButtonClicked(const QString &commandName) {
@@ -365,7 +387,7 @@ void MainWindow::saveCheckBoxStateToFile() {
     settings.endGroup();
 
     settings.beginGroup("CheckBoxSaveState");
-    settings.setValue("save", model->getSaveCheckBox().isChecked());
+    settings.setValue("save", saveCheckBox->isChecked());
 
     settings.endGroup();
 }
