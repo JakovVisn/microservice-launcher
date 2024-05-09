@@ -14,7 +14,7 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    setWindowTitle("Microservice Launcher (V1.7.0)");
+    setWindowTitle("Microservice Launcher (V1.7.1)");
 
     model = new Model();
     controller = new Controller(model);
@@ -289,13 +289,31 @@ void MainWindow::loadCommandsFromConfigFile() {
 
 void MainWindow::loadMainWindowButtonsFromConfigFile() {
     QSettings settings(model->getConfigFile(), QSettings::IniFormat);
+
+    QMap<QString, int> buttonSize;
+    settings.beginGroup("ButtonSize");
+    QStringList keys = settings.childKeys();
+
+    for (const QString& key : keys) {
+        int size = settings.value(key).toInt();
+        buttonSize.insert(key, size);
+    }
+
+    settings.endGroup();
+
     settings.beginGroup("MainWindowButtons");
     QStringList mainWindowButtonsGroups = settings.childKeys();
     for (const QString& group : mainWindowButtonsGroups) {
         QStringList commandNames = settings.value(group).toStringList();
         QHBoxLayout* groupLayout = new QHBoxLayout;
+        groupLayout->setAlignment(Qt::AlignLeft);
         for (const QString& commandName : commandNames) {
             QPushButton *pushButton = new QPushButton(commandName, this);
+
+            int size  = buttonSize.value(commandName);
+            if (size != 0) {
+                pushButton->setFixedWidth(size);
+            }
 
             if (commandName == "Select All") {
                 connect(pushButton, &QPushButton::clicked, this, &MainWindow::onSelectAllButtonClicked);
