@@ -35,6 +35,12 @@ QString Model::getConfigFile() const {
 
 QString Model::findDirectory() const {
     QString directory = readDirectory();
+
+    QProcess process;
+    process.start("sh", QStringList() << "-c" << "echo " + directory);
+    process.waitForFinished(-1);
+    directory = process.readAllStandardOutput().trimmed();
+
     QDir initialDir(directory);
     if (directory.isEmpty() || !initialDir.exists()) {
         qDebug() << "Directory "<< directory << " does not exist or is empty.";

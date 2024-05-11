@@ -14,7 +14,7 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    setWindowTitle("Microservice Launcher (V1.7.3)");
+    setWindowTitle("Microservice Launcher (V1.7.4)");
 
     model = new Model();
     controller = new Controller(model);
