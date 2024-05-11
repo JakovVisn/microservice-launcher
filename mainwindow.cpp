@@ -14,7 +14,7 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    setWindowTitle("Microservice Launcher (V1.7.1)");
+    setWindowTitle("Microservice Launcher (V1.7.2)");
 
     model = new Model();
     controller = new Controller(model);
@@ -36,6 +36,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     loadSavesFromConfigFile();
     loadCommandsFromConfigFile();
+    loadDisabledServicesFromConfig();
     loadSettings();
 
     connect(searchLineEdit, &QLineEdit::textChanged, this, &MainWindow::onSearchLineEditTextChanged);
@@ -120,6 +121,9 @@ void MainWindow::onAddCommandClicked() {
     QCheckBox *executeForSelectedCheckBox = new QCheckBox("Execute for selected services", &dialog);
     formLayout.addRow(executeForSelectedCheckBox);
 
+    QCheckBox *disableSelectedServicesCheckBox = new QCheckBox("Disable currently selected services", &dialog);
+    formLayout.addRow(disableSelectedServicesCheckBox);
+
     QDialogButtonBox buttonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, Qt::Horizontal, &dialog);
     formLayout.addRow(&buttonBox);
 
@@ -135,6 +139,7 @@ void MainWindow::onAddCommandClicked() {
     QString command = commandLineEdit->text();
     QString delay = delayLineEdit->text();
     bool executeForSelectedEnabled = executeForSelectedCheckBox->isChecked();
+    bool disableSelectedServicesEnabled = disableSelectedServicesCheckBox->isChecked();
 
     if (newCommandName.isEmpty()) {
         return;
@@ -173,6 +178,23 @@ void MainWindow::onAddCommandClicked() {
         settings.endGroup();
 
         controller->setCommand(newCommandName, command);
+    }
+
+    if (disableSelectedServicesEnabled && executeForSelectedEnabled) {
+        settings.beginGroup("DisabledServicesForCommands");
+        QStringList checkedServices;
+        QMap<QString, QCheckBox*> checkedCheckBoxes = getCheckedCheckBoxes();
+        if (!checkedCheckBoxes.isEmpty()) {
+            QMap<QString, QCheckBox*>::const_iterator iter;
+            for (iter = checkedCheckBoxes.constBegin(); iter != checkedCheckBoxes.constEnd(); ++iter) {
+                checkedServices << iter.key();
+            }
+
+            settings.setValue(newCommandName, checkedServices);
+            disabledServicesForCommands[newCommandName] = checkedServices;
+        }
+
+        settings.endGroup();
     }
 
     commandMenu->clear();
@@ -353,13 +375,19 @@ void MainWindow::onCustomButtonClicked(const QString &commandName) {
         QMap<QString, QCheckBox*>::const_iterator iter;
         for (iter = checkBoxes.constBegin(); iter != checkBoxes.constEnd(); ++iter) {
             QCheckBox* checkBox = iter.value();
-            if (checkBox->isChecked()) {
-                QString processName = iter.key();
-                QStringList args;
-                args << processName << model->getShortNameByName(processName);
-
-                controller->executeScript(commandName, args);
+            if (!checkBox->isChecked()) {
+                continue;
             }
+
+            QString processName = iter.key();
+            if (disabledServicesForCommands[commandName].contains(processName)) {
+                continue;
+            }
+
+            QStringList args;
+            args << processName << model->getShortNameByName(processName);
+
+            controller->executeScript(commandName, args);
         }
     }
 }
@@ -408,4 +436,34 @@ void MainWindow::saveCheckBoxStateToFile() {
     settings.setValue("save", saveCheckBox->isChecked());
 
     settings.endGroup();
+}
+
+void MainWindow::loadDisabledServicesFromConfig() {
+    QSettings settings(model->getConfigFile(), QSettings::IniFormat);
+
+    settings.beginGroup("DisabledServicesForCommands");
+    QStringList keys = settings.childKeys();
+    foreach (const QString &key, keys) {
+        QStringList services = settings.value(key).toStringList();
+        disabledServicesForCommands[key] = services;
+    }
+
+    settings.endGroup();
+}
+
+QMap<QString, QCheckBox*> MainWindow::getCheckedCheckBoxes() {
+    QMap<QString, QCheckBox*> allCheckBoxes = model->getCheckBoxes();
+    QMap<QString, QCheckBox*> checkedCheckBoxes;
+
+    QMap<QString, QCheckBox*>::const_iterator iter;
+    for (iter = allCheckBoxes.constBegin(); iter != allCheckBoxes.constEnd(); ++iter) {
+        const QString& checkBoxName = iter.key();
+        QCheckBox* checkBox = iter.value();
+
+        if (checkBox->isChecked()) {
+            checkedCheckBoxes.insert(checkBoxName, checkBox);
+        }
+    }
+
+    return checkedCheckBoxes;
 }
