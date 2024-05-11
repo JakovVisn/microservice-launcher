@@ -32,6 +32,7 @@ private slots:
     void onSearchLineEditTextChanged();
     void onSearchLineEditEditingFinished();
     void onAddCommandClicked();
+    void onAddSaveClicked();
     void onCustomButtonClicked(const QString &commandName);
 
 private:

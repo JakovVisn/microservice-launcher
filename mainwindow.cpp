@@ -14,7 +14,7 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    setWindowTitle("Microservice Launcher (V1.7.2)");
+    setWindowTitle("Microservice Launcher (V1.7.3)");
 
     model = new Model();
     controller = new Controller(model);
@@ -201,6 +201,60 @@ void MainWindow::onAddCommandClicked() {
     loadCommandsFromConfigFile();
 }
 
+void MainWindow::onAddSaveClicked() {
+    QDialog dialog(this);
+    dialog.setWindowTitle("Add New Save");
+
+    QFormLayout formLayout(&dialog);
+
+    QLineEdit *nameLineEdit = new QLineEdit(&dialog);
+    formLayout.addRow("Enter the name of the new save:", nameLineEdit);
+
+    QDialogButtonBox buttonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, Qt::Horizontal, &dialog);
+    formLayout.addRow(&buttonBox);
+
+    QObject::connect(&buttonBox, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+    QObject::connect(&buttonBox, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+
+    if (dialog.exec() != QDialog::Accepted) {
+        return;
+    }
+
+    QString newSaveName = nameLineEdit->text();
+
+    if (newSaveName.isEmpty()) {
+        return;
+    }
+
+    QSettings settings(model->getConfigFile(), QSettings::IniFormat);
+
+    settings.beginGroup("Action");
+    QStringList checkedServices;
+    QMap<QString, QCheckBox*> checkedCheckBoxes = getCheckedCheckBoxes();
+    if (checkedCheckBoxes.isEmpty()) {
+        return;
+    }
+
+    QMap<QString, QCheckBox*>::const_iterator iter;
+    for (iter = checkedCheckBoxes.constBegin(); iter != checkedCheckBoxes.constEnd(); ++iter) {
+        checkedServices << iter.key();
+    }
+
+    settings.setValue(newSaveName, checkedServices);
+
+
+    settings.endGroup();
+
+    settings.beginGroup("Save");
+    QString newSaveKey = "action" + QString::number(settings.childKeys().count() + 1);
+    settings.setValue(newSaveKey, newSaveName);
+    settings.endGroup();
+
+
+    saveMenu->clear();
+    loadSavesFromConfigFile();
+}
+
 MainWindow::~MainWindow() {
     delete controller;
     delete model;
@@ -269,6 +323,10 @@ void MainWindow::loadSettings() {
     QAction *addCommandAction = new QAction("Add New Command", this);
     connect(addCommandAction, &QAction::triggered, this, &MainWindow::onAddCommandClicked);
     settingsMenu->addAction(addCommandAction);
+
+    QAction *addSaveAction = new QAction("Add New Save", this);
+    connect(addSaveAction, &QAction::triggered, this, &MainWindow::onAddSaveClicked);
+    settingsMenu->addAction(addSaveAction);
 }
 
 void MainWindow::loadSavesFromConfigFile() {
