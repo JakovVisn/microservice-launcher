@@ -43,6 +43,7 @@ private:
     void loadMainWindowButtonsFromConfigFile();
     void saveCheckBoxStateToFile();
     void loadDisabledServicesFromConfig();
+    void loadCommandArgumentsFromConfig();
     QMap<QString, QCheckBox*> getCheckedCheckBoxes();
 
     Ui::MainWindow *ui;
@@ -59,6 +60,7 @@ private:
     QMenu *settingsMenu;
 
     QMap<QString, QStringList> disabledServicesForCommands;
+    QMap<QString, QStringList> commandArguments;
 
     int width;
     int height;

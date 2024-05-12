@@ -7,6 +7,7 @@
 #include <QMessageBox>
 #include <QFormLayout>
 #include <QDoubleValidator>
+#include <QLabel>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -14,7 +15,7 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    setWindowTitle("Microservice Launcher (V1.7.4)");
+    setWindowTitle("Microservice Launcher (V1.8.0)");
 
     model = new Model();
     controller = new Controller(model);
@@ -37,6 +38,7 @@ MainWindow::MainWindow(QWidget *parent)
     loadSavesFromConfigFile();
     loadCommandsFromConfigFile();
     loadDisabledServicesFromConfig();
+    loadCommandArgumentsFromConfig();
     loadSettings();
 
     connect(searchLineEdit, &QLineEdit::textChanged, this, &MainWindow::onSearchLineEditTextChanged);
@@ -99,33 +101,68 @@ void MainWindow::onAddCommandClicked() {
     QDialog dialog(this);
     dialog.setWindowTitle("Add New Command");
 
-    QFormLayout formLayout(&dialog);
+    QVBoxLayout *layout = new QVBoxLayout(&dialog);
 
+    QHBoxLayout *nameLayout = new QHBoxLayout;
+    QLabel *nameLabel = new QLabel("Enter the name of the new command (Required):", &dialog);
     QLineEdit *nameLineEdit = new QLineEdit(&dialog);
-    formLayout.addRow("Enter the name of the new command:", nameLineEdit);
+    nameLineEdit->setPlaceholderText("My Command");
+    nameLayout->addWidget(nameLabel);
+    nameLayout->addWidget(nameLineEdit);
+    layout->addLayout(nameLayout);
 
+    QHBoxLayout *scriptLayout = new QHBoxLayout;
+    QLabel *scriptLabel = new QLabel("Enter the script name for the command (Required):", &dialog);
     QLineEdit *scriptLineEdit = new QLineEdit(&dialog);
-    formLayout.addRow("Enter the script name for the command:", scriptLineEdit);
+    scriptLineEdit->setPlaceholderText("my_command.sh");
+    scriptLayout->addWidget(scriptLabel);
+    scriptLayout->addWidget(scriptLineEdit);
+    layout->addLayout(scriptLayout);
 
+    QHBoxLayout *commandLayout = new QHBoxLayout;
+    QLabel *commandLabel = new QLabel("Enter the command (Optional):", &dialog);
     QLineEdit *commandLineEdit = new QLineEdit(&dialog);
-    commandLineEdit->setPlaceholderText("Can be empty");
-    formLayout.addRow("Enter the command:", commandLineEdit);
+    commandLineEdit->setPlaceholderText("make my-command");
+    commandLayout->addWidget(commandLabel);
+    commandLayout->addWidget(commandLineEdit);
+    layout->addLayout(commandLayout);
 
+    QHBoxLayout *delayLayout = new QHBoxLayout;
+    QLabel *delayLabel = new QLabel("Enter the delay for the command (Optional):", &dialog);
     QLineEdit *delayLineEdit = new QLineEdit(&dialog);
-    QDoubleValidator *validator = new QDoubleValidator(delayLineEdit);
-    validator->setBottom(0.0);
+    QDoubleValidator *validator = new QDoubleValidator(0.0, 999999.0, 2, delayLineEdit);
     delayLineEdit->setValidator(validator);
-    delayLineEdit->setPlaceholderText("Can be empty");
-    formLayout.addRow("Enter the delay for the command:", delayLineEdit);
+    delayLineEdit->setPlaceholderText("5,0");
+    delayLayout->addWidget(delayLabel);
+    delayLayout->addWidget(delayLineEdit);
+    layout->addLayout(delayLayout);
+
+    QHBoxLayout *argumentLayout = new QHBoxLayout;
+    QLabel *argumentLabel = new QLabel("Enter arguments separated by comma (Optional):", &dialog);
+    QLineEdit *argumentLineEdit = new QLineEdit(&dialog);
+    argumentLineEdit->setPlaceholderText("arg1,arg2,arg3");
+    argumentLayout->addWidget(argumentLabel);
+    argumentLayout->addWidget(argumentLineEdit);
+    layout->addLayout(argumentLayout);
 
     QCheckBox *executeForSelectedCheckBox = new QCheckBox("Execute for selected services", &dialog);
-    formLayout.addRow(executeForSelectedCheckBox);
+    layout->addWidget(executeForSelectedCheckBox);
 
     QCheckBox *disableSelectedServicesCheckBox = new QCheckBox("Disable currently selected services", &dialog);
-    formLayout.addRow(disableSelectedServicesCheckBox);
+    layout->addWidget(disableSelectedServicesCheckBox);
 
     QDialogButtonBox buttonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, Qt::Horizontal, &dialog);
-    formLayout.addRow(&buttonBox);
+    layout->addWidget(&buttonBox);
+
+    auto checkFields = [&](){
+        bool fieldsFilled = !nameLineEdit->text().isEmpty() && !scriptLineEdit->text().isEmpty();
+        buttonBox.button(QDialogButtonBox::Ok)->setEnabled(fieldsFilled);
+    };
+
+    connect(nameLineEdit, &QLineEdit::textChanged, this, checkFields);
+    connect(scriptLineEdit, &QLineEdit::textChanged, this, checkFields);
+
+    checkFields();
 
     QObject::connect(&buttonBox, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
     QObject::connect(&buttonBox, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
@@ -138,14 +175,12 @@ void MainWindow::onAddCommandClicked() {
     QString scriptName = scriptLineEdit->text();
     QString command = commandLineEdit->text();
     QString delay = delayLineEdit->text();
+    QStringList arguments = argumentLineEdit->text().split(',', Qt::SkipEmptyParts);
     bool executeForSelectedEnabled = executeForSelectedCheckBox->isChecked();
     bool disableSelectedServicesEnabled = disableSelectedServicesCheckBox->isChecked();
 
-    if (newCommandName.isEmpty()) {
-        return;
-    }
-
-    if (scriptName.isEmpty()) {
+    if (disableSelectedServicesEnabled && !executeForSelectedEnabled) {
+        QMessageBox::warning(this, "Warning", "Disabling currently selected services will only occur if 'Execute for selected services' is enabled.");
         return;
     }
 
@@ -180,8 +215,7 @@ void MainWindow::onAddCommandClicked() {
         controller->setCommand(newCommandName, command);
     }
 
-    if (disableSelectedServicesEnabled && executeForSelectedEnabled) {
-        settings.beginGroup("DisabledServicesForCommands");
+    if (disableSelectedServicesEnabled) {
         QStringList checkedServices;
         QMap<QString, QCheckBox*> checkedCheckBoxes = getCheckedCheckBoxes();
         if (!checkedCheckBoxes.isEmpty()) {
@@ -190,10 +224,20 @@ void MainWindow::onAddCommandClicked() {
                 checkedServices << iter.key();
             }
 
-            settings.setValue(newCommandName, checkedServices);
             disabledServicesForCommands[newCommandName] = checkedServices;
+            settings.beginGroup("DisabledServicesForCommands");
+            settings.setValue(newCommandName, checkedServices);
+            settings.endGroup();
+        } else {
+            QMessageBox::information(&dialog, "Info", "No service was checked, so this command will be applied to all services.");
         }
+    }
 
+    if (!arguments.isEmpty()) {
+        commandArguments[newCommandName] = arguments;
+
+        settings.beginGroup("CommandArguments");
+        settings.setValue(newCommandName, arguments);
         settings.endGroup();
     }
 
@@ -203,15 +247,36 @@ void MainWindow::onAddCommandClicked() {
 
 void MainWindow::onAddSaveClicked() {
     QDialog dialog(this);
+
+    QMap<QString, QCheckBox*> checkedCheckBoxes = getCheckedCheckBoxes();
+    if (checkedCheckBoxes.isEmpty()) {
+        QMessageBox::warning(&dialog, "Warning", "At least one checkbox must be checked.");
+        return;
+    }
+
     dialog.setWindowTitle("Add New Save");
 
-    QFormLayout formLayout(&dialog);
+    QVBoxLayout *layout = new QVBoxLayout(&dialog);
 
+    QHBoxLayout *nameLayout = new QHBoxLayout;
+    QLabel *nameLabel = new QLabel("Enter the name of the new save (Required):", &dialog);
     QLineEdit *nameLineEdit = new QLineEdit(&dialog);
-    formLayout.addRow("Enter the name of the new save:", nameLineEdit);
+    nameLineEdit->setPlaceholderText("My Save");
+    nameLayout->addWidget(nameLabel);
+    nameLayout->addWidget(nameLineEdit);
+    layout->addLayout(nameLayout);
 
     QDialogButtonBox buttonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, Qt::Horizontal, &dialog);
-    formLayout.addRow(&buttonBox);
+    layout->addWidget(&buttonBox);
+
+    auto checkFields = [&](){
+        bool fieldFilled = !nameLineEdit->text().isEmpty();
+        buttonBox.button(QDialogButtonBox::Ok)->setEnabled(fieldFilled);
+    };
+
+    connect(nameLineEdit, &QLineEdit::textChanged, this, checkFields);
+
+    checkFields();
 
     QObject::connect(&buttonBox, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
     QObject::connect(&buttonBox, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
@@ -222,34 +287,21 @@ void MainWindow::onAddSaveClicked() {
 
     QString newSaveName = nameLineEdit->text();
 
-    if (newSaveName.isEmpty()) {
-        return;
-    }
-
-    QSettings settings(model->getConfigFile(), QSettings::IniFormat);
-
-    settings.beginGroup("Action");
     QStringList checkedServices;
-    QMap<QString, QCheckBox*> checkedCheckBoxes = getCheckedCheckBoxes();
-    if (checkedCheckBoxes.isEmpty()) {
-        return;
-    }
-
     QMap<QString, QCheckBox*>::const_iterator iter;
     for (iter = checkedCheckBoxes.constBegin(); iter != checkedCheckBoxes.constEnd(); ++iter) {
         checkedServices << iter.key();
     }
 
+    QSettings settings(model->getConfigFile(), QSettings::IniFormat);
+    settings.beginGroup("Action");
     settings.setValue(newSaveName, checkedServices);
-
-
     settings.endGroup();
 
     settings.beginGroup("Save");
     QString newSaveKey = "action" + QString::number(settings.childKeys().count() + 1);
     settings.setValue(newSaveKey, newSaveName);
     settings.endGroup();
-
 
     saveMenu->clear();
     loadSavesFromConfigFile();
@@ -421,13 +473,46 @@ void MainWindow::loadMainWindowButtonsFromConfigFile() {
 }
 
 void MainWindow::onCustomButtonClicked(const QString &commandName) {
+    QStringList commandArgs;
+    if (!commandArguments[commandName].isEmpty()) {
+        QDialog dialog(this);
+        dialog.setWindowTitle(tr("Enter Command Arguments"));
+        dialog.setMinimumWidth(dialog.windowTitle().size()*12);
+
+        QVBoxLayout *layout = new QVBoxLayout(&dialog);
+
+        QStringList commandArgumentNames = commandArguments[commandName];
+        foreach (const QString &argument, commandArgumentNames) {
+            QLineEdit *lineEdit = new QLineEdit(&dialog);
+            lineEdit->setPlaceholderText(argument);
+            layout->addWidget(lineEdit);
+        }
+
+        QDialogButtonBox buttonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, Qt::Horizontal, &dialog);
+        layout->addWidget(&buttonBox);
+
+        QObject::connect(&buttonBox, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+        QObject::connect(&buttonBox, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+
+        if (dialog.exec() != QDialog::Accepted) {
+            return;
+        }
+
+        foreach (QObject *obj, dialog.children()) {
+            QLineEdit *lineEdit = qobject_cast<QLineEdit*>(obj);
+            if (lineEdit) {
+                commandArgs << lineEdit->text();
+            }
+        }
+    }
+
     QSettings settings(model->getConfigFile(), QSettings::IniFormat);
     settings.beginGroup("ExecuteForSelected");
     bool executeForSelectedEnabled = settings.value(commandName, false).toBool();
     settings.endGroup();
 
     if (!executeForSelectedEnabled) {
-        controller->executeScript(commandName);
+        controller->executeScript(commandName, commandArgs);
     } else {
         QMap<QString, QCheckBox*> checkBoxes = model->getCheckBoxes();
         QMap<QString, QCheckBox*>::const_iterator iter;
@@ -443,7 +528,7 @@ void MainWindow::onCustomButtonClicked(const QString &commandName) {
             }
 
             QStringList args;
-            args << processName << model->getShortNameByName(processName);
+            args << processName << model->getShortNameByName(processName) << commandArgs;
 
             controller->executeScript(commandName, args);
         }
@@ -504,6 +589,19 @@ void MainWindow::loadDisabledServicesFromConfig() {
     foreach (const QString &key, keys) {
         QStringList services = settings.value(key).toStringList();
         disabledServicesForCommands[key] = services;
+    }
+
+    settings.endGroup();
+}
+
+void MainWindow::loadCommandArgumentsFromConfig() {
+    QSettings settings(model->getConfigFile(), QSettings::IniFormat);
+
+    settings.beginGroup("CommandArguments");
+    QStringList keys = settings.childKeys();
+    foreach (const QString &key, keys) {
+        QStringList arguments = settings.value(key).toStringList();
+        commandArguments[key] = arguments;
     }
 
     settings.endGroup();
