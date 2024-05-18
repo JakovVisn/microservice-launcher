@@ -134,7 +134,7 @@ QVector<int> Model::getServicePorts(const QString& folderName) const {
     QString prefix = shortNames.value(folderName);
 
     QStringList args;
-    args << path << prefix;
+    args << path << prefix << QCoreApplication::applicationDirPath();
 
     QProcess process;
     process.start(QCoreApplication::applicationDirPath() + "/" + "ports.sh", args);
