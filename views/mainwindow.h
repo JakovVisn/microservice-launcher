@@ -4,7 +4,6 @@
 #include <QMainWindow>
 #include <QVBoxLayout>
 #include <QLineEdit>
-#include <QtWidgets/qpushbutton.h>
 
 #include "controllers/controller.h"
 

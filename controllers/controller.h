@@ -11,10 +11,9 @@ public:
 
     void selectAll();
     void deselectAll();
-    void start(const QString& processName);
+    void start(MicroserviceData* microservice);
     void stop(const QString& processName);
     void refresh();
-    void refreshCheckboxState(const QString& processName);
     void selectDetermined(const QString &actionName);
     void executeScript(const QString &commandName, const QStringList &additionalArgs = QStringList());
     void setDelay(const QString &commandName, const float &delay);

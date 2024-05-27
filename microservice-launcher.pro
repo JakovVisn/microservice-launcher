@@ -12,12 +12,15 @@ SOURCES += \
     main.cpp \
     views/mainwindow.cpp \
     controllers/controller.cpp \
-    models/model.cpp
+    models/model.cpp \
+    models/microservice_data.cpp
 
 HEADERS += \
     views/mainwindow.h \
     controllers/controller.h \
-    models/model.h
+    models/model.h \
+    models/microservice_data.h \
+    models/microservice_status.h
 
 FORMS += \
     views/mainwindow.ui

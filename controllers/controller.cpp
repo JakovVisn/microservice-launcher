@@ -1,4 +1,6 @@
 #include "controller.h"
+#include "models/microservice_data.h"
+#include "models/microservice_status.h"
 
 #include <csignal>
 
@@ -6,7 +8,9 @@
 #include <QSettings>
 #include <QCoreApplication>
 
-Controller::Controller(Model *model_): model(model_) {
+Controller::Controller(Model *model)
+    : model(model)
+{
     loadDelaysFromConfig();
     loadCommandsFromConfig();
 }
@@ -38,17 +42,15 @@ void Controller::loadCommandsFromConfig() {
     settings.endGroup();
 }
 
-void Controller::start(const QString& processName) {
-    refreshCheckboxState(processName);
-    QMap<QString, QCheckBox*> checkBoxStatuses = model->getCheckBoxStatuses();
-    QCheckBox* statusCheckbox = checkBoxStatuses.value(processName);
-    if (statusCheckbox->isChecked()) {
-        qDebug() << "Process" << processName << "is already running or in debug mode.";
+void Controller::start(MicroserviceData* microservice) {
+    microservice->refreshCheckboxState();
+    if (microservice->getStatus() != MicroserviceStatus::Inactive) {
+        qDebug() << "Process" << microservice->getName() << "is already running or in debug mode.";
         return;
     }
 
     QStringList args;
-    args << processName << model->getShortNameByName(processName);
+    args << microservice->getName() << microservice->getShortName();
 
     executeScript("Start", args);
 }
@@ -58,51 +60,38 @@ void Controller::stop(const QString& processName) {
     stopProcess(processName);
 };
 
-void Controller::refreshCheckboxState(const QString& processName) {
-    QMap<QString, QCheckBox*> checkBoxStatuses = model->getCheckBoxStatuses();
-    QCheckBox* statusCheckbox = checkBoxStatuses.value(processName);
-
-    bool isRunning = model->isServiceRunning(processName);
-    bool isDebug = isRunning ? false : model->checkDebug(processName);
-
-    statusCheckbox->setChecked(isRunning ? isRunning : isDebug);
-    statusCheckbox->setStyleSheet(isDebug ? "background-color: green;" : "");
-};
-
 void Controller::refresh() {
-    QMap<QString, QCheckBox*> checkBoxes = model->getCheckBoxes();
-    QMap<QString, QCheckBox*>::const_iterator iter;
-    for (iter = checkBoxes.constBegin(); iter != checkBoxes.constEnd(); ++iter) {
-        refreshCheckboxState(iter.key());
+    QMap<QString, MicroserviceData*> microservices = model->getMicroservices();
+    QMap<QString, MicroserviceData*>::const_iterator iter;
+    for (iter = microservices.constBegin(); iter != microservices.constEnd(); ++iter) {
+        iter.value()->refreshCheckboxState();
     }
 };
 
 void Controller::stopProcess(const QString& processName) const {
-    int processId = model->getProcessId(processName);
-    if (processId == -1) {
+    int processID = model->getProcessID(processName);
+    if (processID == -1) {
         qDebug() << "Process" << processName << "not found. Cannot stop.";
         return;
     }
 
-    ::kill(processId, SIGINT);
+    ::kill(processID, SIGINT);
     qDebug() << "Sent SIGINT to stop process" << processName;
 }
 
 void Controller::selectAll() {
-    QMap<QString, QCheckBox*> checkBoxes = model->getCheckBoxes();
-    QMap<QString, QCheckBox*>::const_iterator iter;
-    for (iter = checkBoxes.constBegin(); iter != checkBoxes.constEnd(); ++iter) {
-        QCheckBox* checkBox = iter.value();
-        checkBox->setChecked(true);
+    QMap<QString, MicroserviceData*> microservices = model->getMicroservices();
+    QMap<QString, MicroserviceData*>::const_iterator iter;
+    for (iter = microservices.constBegin(); iter != microservices.constEnd(); ++iter) {
+        iter.value()->setCheckBoxChecked(true);
     }
 };
 
 void Controller::deselectAll() {
-    QMap<QString, QCheckBox*> checkBoxes = model->getCheckBoxes();
-    QMap<QString, QCheckBox*>::const_iterator iter;
-    for (iter = checkBoxes.constBegin(); iter != checkBoxes.constEnd(); ++iter) {
-        QCheckBox* checkBox = iter.value();
-        checkBox->setChecked(false);
+    QMap<QString, MicroserviceData*> microservices = model->getMicroservices();
+    QMap<QString, MicroserviceData*>::const_iterator iter;
+    for (iter = microservices.constBegin(); iter != microservices.constEnd(); ++iter) {
+        iter.value()->setCheckBoxChecked(false);
     }
 };
 
@@ -112,11 +101,10 @@ void Controller::selectDetermined(const QString &actionName) {
     QStringList checkboxNames = settings.value(actionName).toStringList();
     settings.endGroup();
 
-    QMap<QString, QCheckBox*> checkBoxes = model->getCheckBoxes();
+    QMap<QString, MicroserviceData*> microservices = model->getMicroservices();
     for (const QString &checkboxName : checkboxNames) {
-        QCheckBox *checkBox = checkBoxes.value(checkboxName);
-        if (checkBox) {
-            checkBox->setChecked(true);
+        if (microservices.contains(checkboxName)) {
+            microservices.value(checkboxName)->setCheckBoxChecked(true);
         }
     }
 }

@@ -1,11 +1,11 @@
 #include "mainwindow.h"
+#include "models/microservice_data.h"
 #include "ui_mainwindow.h"
 
+#include <QtWidgets/qpushbutton.h>
 #include <QScrollArea>
 #include <QSettings>
-#include <QInputDialog>
 #include <QMessageBox>
-#include <QFormLayout>
 #include <QDoubleValidator>
 #include <QLabel>
 
@@ -15,7 +15,7 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    setWindowTitle("Microservice Launcher (V1.8.2)");
+    setWindowTitle("Microservice Launcher (V1.8.3)");
 
     model = new Model();
     controller = new Controller(model);
@@ -70,25 +70,24 @@ MainWindow::MainWindow(QWidget *parent)
 
     QSettings settings(model->getSaveFile(), QSettings::IniFormat);
     settings.beginGroup("CheckBoxState");
-    QMap<QString, QCheckBox*> checkBoxes = model->getCheckBoxes();
-    QMap<QString, QCheckBox*> checkBoxStatuses = model->getCheckBoxStatuses();
-    QMap<QString, QCheckBox*>::const_iterator iter;
-    for (iter = checkBoxes.constBegin(); iter != checkBoxes.constEnd(); ++iter) {
+    QMap<QString, MicroserviceData*> microservices = model->getMicroservices();
+    QMap<QString, MicroserviceData*>::const_iterator iter;
+    for (iter = microservices.constBegin(); iter != microservices.constEnd(); ++iter) {
         const QString &folderName = iter.key();
 
         if (saveCheckBox->isChecked()) {
             bool isChecked = settings.value(folderName, false).toBool();
-            iter.value()->setChecked(isChecked);
+            iter.value()->setCheckBoxChecked(isChecked);
         }
 
         QHBoxLayout *rowLayout = new QHBoxLayout;
         rowLayout->setAlignment(Qt::AlignLeft);
         rowLayout->setSpacing(10);
-        rowLayout->addWidget(checkBoxStatuses.value(folderName));
-        rowLayout->addWidget(iter.value());
+        rowLayout->addWidget(iter.value()->getstatusCheckBox());
+        rowLayout->addWidget(iter.value()->getCheckBox());
         contentLayout->addLayout(rowLayout);
 
-        controller->refreshCheckboxState(folderName);
+        iter.value()->refreshCheckboxState();
     }
 
     settings.endGroup();
@@ -330,25 +329,23 @@ void MainWindow::onDeselectAllButtonClicked() {
 }
 
 void MainWindow::onStartButtonClicked() {
-    QMap<QString, QCheckBox*> checkBoxes = model->getCheckBoxes();
-    QMap<QString, QCheckBox*>::const_iterator iter;
-    for (iter = checkBoxes.constBegin(); iter != checkBoxes.constEnd(); ++iter) {
-        QCheckBox* checkBox = iter.value();
-        if (checkBox->isChecked()) {
+    QMap<QString, MicroserviceData*> microservices = model->getMicroservices();
+    QMap<QString, MicroserviceData*>::const_iterator iter;
+    for (iter = microservices.constBegin(); iter != microservices.constEnd(); ++iter) {
+        if (iter.value()->getCheckBox()->isChecked()) {
             QString folderName = iter.key();
             qDebug() << "Trying to launch service:" << folderName;
 
-            controller->start(folderName);
+            controller->start(iter.value());
         }
     }
 }
 
 void MainWindow::onStopButtonClicked() {
-    QMap<QString, QCheckBox*> checkBoxes = model->getCheckBoxes();
-    QMap<QString, QCheckBox*>::const_iterator iter;
-    for (iter = checkBoxes.constBegin(); iter != checkBoxes.constEnd(); ++iter) {
-        QCheckBox* checkBox = iter.value();
-        if (checkBox->isChecked()) {
+    QMap<QString, MicroserviceData*> microservices = model->getMicroservices();
+    QMap<QString, MicroserviceData*>::const_iterator iter;
+    for (iter = microservices.constBegin(); iter != microservices.constEnd(); ++iter) {
+        if (iter.value()->getCheckBox()->isChecked()) {
             QString processName = iter.key();
             controller->stop(processName);
         }
@@ -514,11 +511,10 @@ void MainWindow::onCustomButtonClicked(const QString &commandName) {
     if (!executeForSelectedEnabled) {
         controller->executeScript(commandName, commandArgs);
     } else {
-        QMap<QString, QCheckBox*> checkBoxes = model->getCheckBoxes();
-        QMap<QString, QCheckBox*>::const_iterator iter;
-        for (iter = checkBoxes.constBegin(); iter != checkBoxes.constEnd(); ++iter) {
-            QCheckBox* checkBox = iter.value();
-            if (!checkBox->isChecked()) {
+        QMap<QString, MicroserviceData*> microservices = model->getMicroservices();
+        QMap<QString, MicroserviceData*>::const_iterator iter;
+        for (iter = microservices.constBegin(); iter != microservices.constEnd(); ++iter) {
+            if (!iter.value()->getCheckBox()->isChecked()) {
                 continue;
             }
 
@@ -528,7 +524,7 @@ void MainWindow::onCustomButtonClicked(const QString &commandName) {
             }
 
             QStringList args;
-            args << processName << model->getShortNameByName(processName) << commandArgs;
+            args << processName << iter.value()->getShortName() << commandArgs;
 
             controller->executeScript(commandName, args);
         }
@@ -541,11 +537,11 @@ void MainWindow::onSaveActionClicked(const QString &actionName) {
 
 void MainWindow::onSearchLineEditTextChanged() {
     QString searchText = searchLineEdit->text();
-    QMap<QString, QCheckBox*> checkBoxes = model->getCheckBoxes();
-    QMap<QString, QCheckBox*>::const_iterator iter;
+    QMap<QString, MicroserviceData*> microservices = model->getMicroservices();
+    QMap<QString, MicroserviceData*>::const_iterator iter;
 
-    for (iter = checkBoxes.constBegin(); iter != checkBoxes.constEnd(); ++iter) {
-        QCheckBox* checkBox = iter.value();
+    for (iter = microservices.constBegin(); iter != microservices.constEnd(); ++iter) {
+        QCheckBox* checkBox = iter.value()->getCheckBox();
         if (searchText.isEmpty()) {
             checkBox->setStyleSheet("");
         } else if (checkBox->text().contains(searchText, Qt::CaseInsensitive)) {
@@ -565,11 +561,11 @@ void MainWindow::saveCheckBoxStateToFile() {
     QSettings settings(model->getSaveFile(), QSettings::IniFormat);
     settings.beginGroup("CheckBoxState");
 
-    QMap<QString, QCheckBox*> checkBoxes = model->getCheckBoxes();
-    QMap<QString, QCheckBox*>::const_iterator iter;
-    for (iter = checkBoxes.constBegin(); iter != checkBoxes.constEnd(); ++iter) {
+    QMap<QString, MicroserviceData*> microservices = model->getMicroservices();
+    QMap<QString, MicroserviceData*>::const_iterator iter;
+    for (iter = microservices.constBegin(); iter != microservices.constEnd(); ++iter) {
         QString folderName = iter.key();
-        bool isChecked = iter.value()->isChecked();
+        bool isChecked = iter.value()->getCheckBox()->isChecked();
         settings.setValue(folderName, isChecked);
     }
 
@@ -608,13 +604,13 @@ void MainWindow::loadCommandArgumentsFromConfig() {
 }
 
 QMap<QString, QCheckBox*> MainWindow::getCheckedCheckBoxes() {
-    QMap<QString, QCheckBox*> allCheckBoxes = model->getCheckBoxes();
+    QMap<QString, MicroserviceData*> microservices = model->getMicroservices();
     QMap<QString, QCheckBox*> checkedCheckBoxes;
 
-    QMap<QString, QCheckBox*>::const_iterator iter;
-    for (iter = allCheckBoxes.constBegin(); iter != allCheckBoxes.constEnd(); ++iter) {
+    QMap<QString, MicroserviceData*>::const_iterator iter;
+    for (iter = microservices.constBegin(); iter != microservices.constEnd(); ++iter) {
         const QString& checkBoxName = iter.key();
-        QCheckBox* checkBox = iter.value();
+        QCheckBox* checkBox = iter.value()->getCheckBox();
 
         if (checkBox->isChecked()) {
             checkedCheckBoxes.insert(checkBoxName, checkBox);

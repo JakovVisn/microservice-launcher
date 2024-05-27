@@ -3,28 +3,23 @@
 
 #include <QtWidgets/qcheckbox.h>
 
+class MicroserviceData;
+
 class Model
 {
 public:
     explicit Model();
     QString getConfigFile() const;
-    QMap<QString, QCheckBox*> getCheckBoxes() const;
-    bool checkDebug(const QString& processName) const;
+    QMap<QString, MicroserviceData*> getMicroservices() const;
     int getPidByName(const QString& processName) const;
     QString getDirectory() const;
-    QString getShortNameByName(const QString fileName) const;
-    bool isServiceRunning(const QString& processName) const;
-    QMap<QString, QCheckBox*> getCheckBoxStatuses() const;
-    int getProcessId(const QString& processName) const;
+    int getProcessID(const QString& processName) const;
     QString getSaveFile() const;
 
 private:
-    QString getFolderInfo(const QString& folderName) const;
     QString readDirectory() const;
     QStringList readExcludedFoldersFromConfig() const;
     QString createEmptyFile(const QString fileName) const;
-    QString readApplicationShortNameFromFile(const QString& filePath) const;
-    QVector<int> getServicePorts(const QString& folderName) const;
     QString findDirectory() const;
     QStringList getFolderNames() const;
 
@@ -32,10 +27,7 @@ private:
     const QString defaultSaveFile;
     const QString directory;
 
-    QMap<QString, QCheckBox*> checkBoxes;
-    QMap<QString, QCheckBox*> checkBoxStatuses;
-    QMap<QString, QString> shortNames;
-    QMap<QString, QVector<int>> servicePorts;
+    QMap<QString, MicroserviceData*> microservices;
 };
 
 #endif // MODEL_H
