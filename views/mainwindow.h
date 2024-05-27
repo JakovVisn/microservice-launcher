@@ -6,7 +6,7 @@
 #include <QLineEdit>
 #include <QtWidgets/qpushbutton.h>
 
-#include "controller.h"
+#include "controllers/controller.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {

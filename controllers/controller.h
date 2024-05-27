@@ -1,7 +1,7 @@
 #ifndef CONTROLLER_H
 #define CONTROLLER_H
 
-#include "model.h"
+#include "models/model.h"
 
 class Controller: public QWidget
 {

@@ -10,17 +10,17 @@ CONFIG += c++17
 
 SOURCES += \
     main.cpp \
-    mainwindow.cpp \
-    controller.cpp \
-    model.cpp
+    views/mainwindow.cpp \
+    controllers/controller.cpp \
+    models/model.cpp
 
 HEADERS += \
-    mainwindow.h \
-    controller.h \
-    model.h
+    views/mainwindow.h \
+    controllers/controller.h \
+    models/model.h
 
 FORMS += \
-    mainwindow.ui
+    views/mainwindow.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
