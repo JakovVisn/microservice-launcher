@@ -10,13 +10,8 @@ Model::Model()
     : defaultConfigFile(createEmptyFile("/config.ini"))
     , defaultSaveFile(createEmptyFile("/save.ini"))
     , directory(findDirectory())
-{
-    const QStringList folderNames = getFolderNames();
-    for (const QString &folderName : folderNames) {
-        MicroserviceData *microservice = new MicroserviceData(folderName, getDirectory());
-        microservices.insert(folderName, microservice);
-    }
-}
+    , microservices(getFolderNames(), directory)
+{}
 
 QString Model::getConfigFile() const {
     return defaultConfigFile;
@@ -131,7 +126,7 @@ QStringList Model::readExcludedFoldersFromConfig() const {
     return excludedFolders;
 }
 
-QMap<QString, MicroserviceData*> Model::getMicroservices() const {
+MicroserviceDataMap Model::getMicroservices() const {
     return microservices;
 }
 

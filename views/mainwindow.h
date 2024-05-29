@@ -43,7 +43,7 @@ private:
     void saveCheckBoxStateToFile();
     void loadDisabledServicesFromConfig();
     void loadCommandArgumentsFromConfig();
-    QMap<QString, QCheckBox*> getCheckedCheckBoxes();
+    // QMap<QString, QCheckBox*> getCheckedCheckBoxes();
 
     Ui::MainWindow *ui;
     Model* model;

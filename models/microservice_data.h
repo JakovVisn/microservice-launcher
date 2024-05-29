@@ -17,7 +17,7 @@ public:
     QVector<int> getPorts() const;
     void setCheckBoxChecked(bool checked);
     QCheckBox* getCheckBox();
-    QCheckBox* getstatusCheckBox();
+    QCheckBox* getStatusCheckBox();
 
 private:
     bool isServiceRunning() const;
@@ -25,10 +25,9 @@ private:
     int getPid() const;
     QString readApplicationShortNameFromFile(const QString& filePath) const;
     QString getFolderInfo() const;
-    QVector<int> readPortsFromFile() const;
+    QVector<int> readPortsFromFile(const QString directory) const;
 
     const QString name;
-    const QString directory;
     const QString shortName;
     MicroserviceStatus status;
     QCheckBox* checkBox;

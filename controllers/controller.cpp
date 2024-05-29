@@ -61,9 +61,9 @@ void Controller::stop(const QString& processName) {
 };
 
 void Controller::refresh() {
-    QMap<QString, MicroserviceData*> microservices = model->getMicroservices();
+    QMap<QString, MicroserviceData*> microservicesMap = model->getMicroservices().getDataMap();
     QMap<QString, MicroserviceData*>::const_iterator iter;
-    for (iter = microservices.constBegin(); iter != microservices.constEnd(); ++iter) {
+    for (iter = microservicesMap.constBegin(); iter != microservicesMap.constEnd(); ++iter) {
         iter.value()->refreshCheckboxState();
     }
 };
@@ -80,17 +80,17 @@ void Controller::stopProcess(const QString& processName) const {
 }
 
 void Controller::selectAll() {
-    QMap<QString, MicroserviceData*> microservices = model->getMicroservices();
+    QMap<QString, MicroserviceData*> microservicesMap = model->getMicroservices().getDataMap();
     QMap<QString, MicroserviceData*>::const_iterator iter;
-    for (iter = microservices.constBegin(); iter != microservices.constEnd(); ++iter) {
+    for (iter = microservicesMap.constBegin(); iter != microservicesMap.constEnd(); ++iter) {
         iter.value()->setCheckBoxChecked(true);
     }
 };
 
 void Controller::deselectAll() {
-    QMap<QString, MicroserviceData*> microservices = model->getMicroservices();
+    QMap<QString, MicroserviceData*> microservicesMap = model->getMicroservices().getDataMap();
     QMap<QString, MicroserviceData*>::const_iterator iter;
-    for (iter = microservices.constBegin(); iter != microservices.constEnd(); ++iter) {
+    for (iter = microservicesMap.constBegin(); iter != microservicesMap.constEnd(); ++iter) {
         iter.value()->setCheckBoxChecked(false);
     }
 };
@@ -101,7 +101,7 @@ void Controller::selectDetermined(const QString &actionName) {
     QStringList checkboxNames = settings.value(actionName).toStringList();
     settings.endGroup();
 
-    QMap<QString, MicroserviceData*> microservices = model->getMicroservices();
+    MicroserviceDataMap microservices = model->getMicroservices();
     for (const QString &checkboxName : checkboxNames) {
         if (microservices.contains(checkboxName)) {
             microservices.value(checkboxName)->setCheckBoxChecked(true);

@@ -2,6 +2,7 @@
 #define MODEL_H
 
 #include <QtWidgets/qcheckbox.h>
+#include "microservice_data_map.h"
 
 class MicroserviceData;
 
@@ -10,7 +11,7 @@ class Model
 public:
     explicit Model();
     QString getConfigFile() const;
-    QMap<QString, MicroserviceData*> getMicroservices() const;
+    MicroserviceDataMap getMicroservices() const;
     int getPidByName(const QString& processName) const;
     QString getDirectory() const;
     int getProcessID(const QString& processName) const;
@@ -27,7 +28,7 @@ private:
     const QString defaultSaveFile;
     const QString directory;
 
-    QMap<QString, MicroserviceData*> microservices;
+    MicroserviceDataMap microservices;
 };
 
 #endif // MODEL_H

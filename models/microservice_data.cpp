@@ -7,9 +7,8 @@
 
 MicroserviceData::MicroserviceData(const QString name, const QString directory)
     : name(name)
-    , directory(directory)
     , shortName(readApplicationShortNameFromFile(directory + "/" + name))
-    , ports(readPortsFromFile())
+    , ports(readPortsFromFile(directory))
 {
     QString folderInfo = getFolderInfo();
     checkBox = new QCheckBox(name + folderInfo);
@@ -33,7 +32,7 @@ QString MicroserviceData::readApplicationShortNameFromFile(const QString& filePa
     return output.trimmed();
 }
 
-QVector<int> MicroserviceData::readPortsFromFile() const {
+QVector<int> MicroserviceData::readPortsFromFile(const QString directory) const {
     QVector<int> ports;
 
     QString path = directory + "/"+ name;
@@ -164,7 +163,7 @@ QCheckBox* MicroserviceData::getCheckBox() {
     return checkBox;
 }
 
-QCheckBox* MicroserviceData::getstatusCheckBox() {
+QCheckBox* MicroserviceData::getStatusCheckBox() {
     return statusCheckBox;
 }
 
