@@ -15,7 +15,7 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    setWindowTitle("Microservice Launcher (V1.8.4)");
+    setWindowTitle("Microservice Launcher (V1.9.0)");
 
     model = new Model();
     controller = new Controller(model);
@@ -37,8 +37,6 @@ MainWindow::MainWindow(QWidget *parent)
 
     loadSavesFromConfigFile();
     loadCommandsFromConfigFile();
-    loadDisabledServicesFromConfig();
-    loadCommandArgumentsFromConfig();
     loadSettings();
 
     connect(searchLineEdit, &QLineEdit::textChanged, this, &MainWindow::onSearchLineEditTextChanged);
@@ -185,59 +183,37 @@ void MainWindow::onAddCommandClicked() {
 
     QSettings settings(model->getConfigFile(), QSettings::IniFormat);
 
-    settings.beginGroup("AdditionalCommands");
-    QString newCommandKey = "Command" + QString::number(settings.childKeys().count() + 1);
-    settings.setValue(newCommandKey, newCommandName);
-    settings.endGroup();
-
-    settings.beginGroup("ScriptNames");
-    settings.setValue(newCommandName, scriptName);
-    settings.endGroup();
-
-    settings.beginGroup("ExecuteForSelected");
-    settings.setValue(newCommandName, executeForSelectedEnabled);
-    settings.endGroup();
+    settings.beginGroup("Command_"+newCommandName);
+    settings.setValue("scriptName", scriptName);
+    settings.setValue("executeForSelected", executeForSelectedEnabled);
 
     if (!delay.isEmpty()){
-        settings.beginGroup("Delays");
-        settings.setValue(newCommandName, delay);
-        settings.endGroup();
-
-        controller->setDelay(newCommandName, delay.toFloat());
+        settings.setValue("delay", delay);
     }
 
     if (!command.isEmpty()) {
-        settings.beginGroup("Commands");
-        settings.setValue(newCommandName, command);
-        settings.endGroup();
-
-        controller->setCommand(newCommandName, command);
+        settings.setValue("command", command);
     }
 
+    if (!arguments.isEmpty()) {
+        settings.setValue("args", arguments);
+    }
+
+    QStringList checkedServicesNames;
     if (disableSelectedServicesEnabled) {
-        QStringList checkedServicesNames;
         QVector<MicroserviceData*> checkedServices = model->getMicroservices().getCheckedServices();
         if (!checkedServices.isEmpty()) {
             for (MicroserviceData* service : checkedServices) {
                 checkedServicesNames << service->getName();
             }
 
-            disabledServicesForCommands[newCommandName] = checkedServicesNames;
-            settings.beginGroup("DisabledServicesForCommands");
-            settings.setValue(newCommandName, checkedServicesNames);
-            settings.endGroup();
+            settings.setValue("excludedServices", checkedServicesNames);
         } else {
             QMessageBox::information(&dialog, "Info", "No service was checked, so this command will be applied to all services.");
         }
     }
 
-    if (!arguments.isEmpty()) {
-        commandArguments[newCommandName] = arguments;
-
-        settings.beginGroup("CommandArguments");
-        settings.setValue(newCommandName, arguments);
-        settings.endGroup();
-    }
+    controller->addCommand(newCommandName, command, arguments, delay.toFloat(), checkedServicesNames, 0, executeForSelectedEnabled, scriptName);
 
     commandMenu->clear();
     loadCommandsFromConfigFile();
@@ -396,37 +372,34 @@ void MainWindow::loadSavesFromConfigFile() {
 }
 
 void MainWindow::loadCommandsFromConfigFile() {
-    QSettings settings(model->getConfigFile(), QSettings::IniFormat);
-    settings.beginGroup("AdditionalCommands");
-    QStringList commands = settings.childKeys();
-
-    for (const QString& key : commands) {
-        QString commandName = settings.value(key).toString();
+    const QMap<QString, Command*>& commands = controller->getCommands();
+    QMap<QString, Command*>::const_iterator iter;
+    for (iter = commands.constBegin(); iter != commands.constEnd(); ++iter) {
+        QString commandName = iter.value()->getName();
         QAction *action = new QAction(commandName, this);
 
-        connect(action, &QAction::triggered, this, [this, commandName]() {
-            onCustomButtonClicked(commandName);
-        });
+        if (commandName == "Select All") {
+            connect(action, &QAction::triggered, this, &MainWindow::onSelectAllButtonClicked);
+        } else if (commandName == "Deselect All") {
+            connect(action, &QAction::triggered, this, &MainWindow::onDeselectAllButtonClicked);
+        } else if (commandName == "Start") {
+            connect(action, &QAction::triggered, this, &MainWindow::onStartButtonClicked);
+        } else if (commandName == "Stop") {
+            connect(action, &QAction::triggered, this, &MainWindow::onStopButtonClicked);
+        } else if (commandName == "Refresh") {
+            connect(action, &QAction::triggered, this, &MainWindow::onRefreshButtonClicked);
+        } else {
+            connect(action, &QAction::triggered, this, [this, commandName]() {
+                onCustomButtonClicked(commandName);
+            });
+        }
 
         commandMenu->addAction(action);
     }
-
-    settings.endGroup();
 }
 
 void MainWindow::loadMainWindowButtonsFromConfigFile() {
     QSettings settings(model->getConfigFile(), QSettings::IniFormat);
-
-    QMap<QString, int> buttonSize;
-    settings.beginGroup("ButtonSize");
-    QStringList keys = settings.childKeys();
-
-    for (const QString& key : keys) {
-        int size = settings.value(key).toInt();
-        buttonSize.insert(key, size);
-    }
-
-    settings.endGroup();
 
     settings.beginGroup("MainWindowButtons");
     QStringList mainWindowButtonsGroups = settings.childKeys();
@@ -437,7 +410,7 @@ void MainWindow::loadMainWindowButtonsFromConfigFile() {
         for (const QString& commandName : commandNames) {
             QPushButton *pushButton = new QPushButton(commandName, this);
 
-            int size  = buttonSize.value(commandName);
+            int size = controller->getCommandButtonSize(commandName);
             if (size != 0) {
                 pushButton->setFixedWidth(size);
             }
@@ -469,14 +442,14 @@ void MainWindow::loadMainWindowButtonsFromConfigFile() {
 
 void MainWindow::onCustomButtonClicked(const QString &commandName) {
     QStringList commandArgs;
-    if (!commandArguments[commandName].isEmpty()) {
+    if (!controller->getCommandArgs(commandName).isEmpty()) {
         QDialog dialog(this);
         dialog.setWindowTitle(tr("Enter Command Arguments"));
         dialog.setMinimumWidth(dialog.windowTitle().size()*12);
 
         QVBoxLayout *layout = new QVBoxLayout(&dialog);
 
-        QStringList commandArgumentNames = commandArguments[commandName];
+        QStringList commandArgumentNames = controller->getCommandArgs(commandName);
         foreach (const QString &argument, commandArgumentNames) {
             QLineEdit *lineEdit = new QLineEdit(&dialog);
             lineEdit->setPlaceholderText(argument);
@@ -501,12 +474,7 @@ void MainWindow::onCustomButtonClicked(const QString &commandName) {
         }
     }
 
-    QSettings settings(model->getConfigFile(), QSettings::IniFormat);
-    settings.beginGroup("ExecuteForSelected");
-    bool executeForSelectedEnabled = settings.value(commandName, false).toBool();
-    settings.endGroup();
-
-    if (!executeForSelectedEnabled) {
+    if (!controller->getCommandExecuteForSelected(commandName)) {
         controller->executeScript(commandName, commandArgs);
     } else {
         QMap<QString, MicroserviceData*> microservicesMap = model->getMicroservices().getDataMap();
@@ -517,7 +485,7 @@ void MainWindow::onCustomButtonClicked(const QString &commandName) {
             }
 
             QString processName = iter.key();
-            if (disabledServicesForCommands[commandName].contains(processName)) {
+            if (controller->getCommandExcludedServices(commandName).contains(processName)) {
                 continue;
             }
 
@@ -570,32 +538,6 @@ void MainWindow::saveCheckBoxStateToFile() {
 
     settings.beginGroup("CheckBoxSaveState");
     settings.setValue("save", saveCheckBox->isChecked());
-
-    settings.endGroup();
-}
-
-void MainWindow::loadDisabledServicesFromConfig() {
-    QSettings settings(model->getConfigFile(), QSettings::IniFormat);
-
-    settings.beginGroup("DisabledServicesForCommands");
-    QStringList keys = settings.childKeys();
-    foreach (const QString &key, keys) {
-        QStringList services = settings.value(key).toStringList();
-        disabledServicesForCommands[key] = services;
-    }
-
-    settings.endGroup();
-}
-
-void MainWindow::loadCommandArgumentsFromConfig() {
-    QSettings settings(model->getConfigFile(), QSettings::IniFormat);
-
-    settings.beginGroup("CommandArguments");
-    QStringList keys = settings.childKeys();
-    foreach (const QString &key, keys) {
-        QStringList arguments = settings.value(key).toStringList();
-        commandArguments[key] = arguments;
-    }
 
     settings.endGroup();
 }

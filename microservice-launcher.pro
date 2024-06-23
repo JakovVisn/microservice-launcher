@@ -14,7 +14,8 @@ SOURCES += \
     controllers/controller.cpp \
     models/model.cpp \
     models/microservice_data.cpp \
-    models/microservice_data_map.cpp
+    models/microservice_data_map.cpp \
+    controllers/command.cpp
 
 HEADERS += \
     views/mainwindow.h \
@@ -22,7 +23,8 @@ HEADERS += \
     models/model.h \
     models/microservice_data.h \
     models/microservice_status.h \
-    models/microservice_data_map.h
+    models/microservice_data_map.h \
+    controllers/command.h
 
 FORMS += \
     views/mainwindow.ui

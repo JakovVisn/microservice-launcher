@@ -16,6 +16,8 @@ public:
     QString getDirectory() const;
     int getProcessID(const QString& processName) const;
     QString getSaveFile() const;
+    float getNewTabDelayFromConfigFile() const;
+    float getNewTabDelay() const;
 
 private:
     QString readDirectory() const;
@@ -29,6 +31,8 @@ private:
     const QString directory;
 
     MicroserviceDataMap microservices;
+
+    const float newTabDelay;
 };
 
 #endif // MODEL_H

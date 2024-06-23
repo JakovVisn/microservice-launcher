@@ -7,39 +7,43 @@
 #include <QtCore/qprocess.h>
 #include <QSettings>
 #include <QCoreApplication>
+#include <QMessageBox>
 
 Controller::Controller(Model *model)
     : model(model)
 {
-    loadDelaysFromConfig();
     loadCommandsFromConfig();
-}
-
-void Controller::loadDelaysFromConfig() {
-    QSettings settings(model->getConfigFile(), QSettings::IniFormat);
-    settings.beginGroup("Delays");
-    QStringList keys = settings.childKeys();
-
-    for (const QString& key : keys) {
-        float delay = settings.value(key).toFloat();
-        delays.insert(key, delay);
-        qDebug() << "key: " << key << " delay: " << delay;
-    }
-
-    settings.endGroup();
 }
 
 void Controller::loadCommandsFromConfig() {
     QSettings settings(model->getConfigFile(), QSettings::IniFormat);
-    settings.beginGroup("Commands");
-    QStringList keys = settings.childKeys();
 
-    for (const QString& key : keys) {
-        QString command = settings.value(key).toString();
-        commands.insert(key, command);
+    foreach (const QString &group, settings.childGroups()) {
+        if (group.startsWith("Command_")) {
+            settings.beginGroup(group);
+
+            QString name = group.mid(QString("Command_").length());
+            QString command = settings.value("command").toString();
+            float delay = settings.value("delay").toFloat();
+            int buttonSize = settings.value("buttonSize").toInt();
+            bool executeForSelected = settings.value("executeForSelected").toBool();;
+            QString scriptName = settings.value("scriptName").toString();
+
+            QStringList excludedServices;
+            if (settings.contains("excludedServices")) {
+                excludedServices = settings.value("excludedServices").toStringList();
+            }
+
+            QStringList args;
+            if (settings.contains("args")) {
+                args = settings.value("args").toStringList();
+            }
+
+            addCommand(name, command, args, delay, excludedServices, buttonSize, executeForSelected, scriptName);
+
+            settings.endGroup();
+        }
     }
-
-    settings.endGroup();
 }
 
 void Controller::start(MicroserviceData* microservice) {
@@ -110,14 +114,10 @@ void Controller::selectDetermined(const QString &actionName) {
 }
 
 void Controller::executeScript(const QString &commandName, const QStringList &additionalArgs) {
-    QSettings settings(model->getConfigFile(), QSettings::IniFormat);
-    settings.beginGroup("ScriptNames");
-    QString scriptName = settings.value(commandName).toString();
-    settings.endGroup();
-
-    QString command = commands.value(commandName);
-    QString newTabDelay = QString::number(delays.value("newTab", 0));
-    QString customDelay = QString::number(delays.value(commandName));
+    QString scriptName = commands.value(commandName)->getScriptName();
+    QString command = commands.value(commandName)->getCommand();
+    QString newTabDelay = QString::number(model->getNewTabDelay());
+    QString customDelay = QString::number(commands.value(commandName)->getDelay());
     QString workingDirectory = model->getDirectory();
 
     QProcess process;
@@ -135,10 +135,47 @@ void Controller::executeScript(const QString &commandName, const QStringList &ad
     }
 }
 
-void Controller::setDelay(const QString &commandName, const float &delay){
-    delays.insert(commandName, delay);
+int Controller::getCommandButtonSize(const QString &commandName) const{
+    if (!commands.contains(commandName)) {
+        QMessageBox::critical(nullptr, "Error", "Command not found: " + commandName);
+        QCoreApplication::quit();
+    }
+
+    return commands.value(commandName)->getButtonSize();
 }
 
-void Controller::setCommand(const QString &commandName, const QString &command){
-    commands.insert(commandName, command);
+QStringList Controller::getCommandExcludedServices(const QString &commandName) const{
+    if (!commands.contains(commandName)) {
+        QMessageBox::critical(nullptr, "Error", "Command not found: " + commandName);
+        QCoreApplication::quit();
+    }
+
+    return commands.value(commandName)->getExcludedServices();
+}
+
+QStringList Controller::getCommandArgs(const QString &commandName) const{
+    if (!commands.contains(commandName)) {
+        QMessageBox::critical(nullptr, "Error", "Command not found: " + commandName);
+        QCoreApplication::quit();
+    }
+
+    return commands.value(commandName)->getArgs();
+}
+
+bool Controller::getCommandExecuteForSelected(const QString &commandName) const{
+    if (!commands.contains(commandName)) {
+        QMessageBox::critical(nullptr, "Error", "Command not found: " + commandName);
+        QCoreApplication::quit();
+    }
+
+    return commands.value(commandName)->getExecuteForSelected();
+}
+
+QMap<QString, Command*> Controller::getCommands() const {
+    return commands;
+}
+
+void Controller::addCommand(const QString &name, const QString &command, const QStringList &args, const float delay, const QStringList &excludedServices, const int buttonSize, const bool executeForSelected, const QString &scriptName) {
+    Command *cmd = new Command(name, command, args, delay, excludedServices, buttonSize, executeForSelected, scriptName);
+    commands.insert(name, cmd);
 }

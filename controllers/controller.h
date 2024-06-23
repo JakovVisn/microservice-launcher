@@ -2,6 +2,7 @@
 #define CONTROLLER_H
 
 #include "models/model.h"
+#include "command.h"
 
 class Controller: public QWidget
 {
@@ -16,17 +17,19 @@ public:
     void refresh();
     void selectDetermined(const QString &actionName);
     void executeScript(const QString &commandName, const QStringList &additionalArgs = QStringList());
-    void setDelay(const QString &commandName, const float &delay);
-    void setCommand(const QString &commandName, const QString &command);
+    int getCommandButtonSize(const QString &commandName) const;
+    bool getCommandExecuteForSelected(const QString &commandName) const;
+    QStringList getCommandExcludedServices(const QString &commandName) const;
+    QStringList getCommandArgs(const QString &commandName) const;
+    QMap<QString, Command*> getCommands() const;
+    void addCommand(const QString &name, const QString &command, const QStringList &args, const float delay, const QStringList &excludedServices, const int buttonSize, const bool executeForSelected, const QString &scriptName);
 
 private:
     Model* model;
-    QMap<QString, float> delays;
-    QMap<QString, QString> commands;
 
-    void loadDelaysFromConfig();
     void loadCommandsFromConfig();
     void stopProcess(const QString& processName) const;
+    QMap<QString, Command*> commands;
 };
 
 #endif // CONTROLLER_H
