@@ -1,5 +1,4 @@
 #include "microservice_data.h"
-#include "model.h"
 
 #include <QCoreApplication>
 #include <QProcessEnvironment>
@@ -9,12 +8,19 @@ MicroserviceData::MicroserviceData(const QString name, const QString directory)
     : name(name)
     , shortName(readApplicationShortNameFromFile(directory + "/" + name))
     , ports(readPortsFromFile(directory))
+    , flagsLayout(new QHBoxLayout)
 {
+    flagsLayout->setAlignment(Qt::AlignLeft);
+    flagsLayout->setSpacing(10);
+
     QString folderInfo = getFolderInfo();
     checkBox = new QCheckBox(name + folderInfo);
 
     statusCheckBox = new QCheckBox();
     statusCheckBox->setEnabled(false);
+
+    enabledFlagsLabel = new QLabel(getEnabledFlags().join(", "));
+    enabledFlagsLabel->setStyleSheet("color: #7161d4;");
 }
 
 QString MicroserviceData::readApplicationShortNameFromFile(const QString& filePath) const {
@@ -169,4 +175,61 @@ QCheckBox* MicroserviceData::getStatusCheckBox() {
 
 QVector<int> MicroserviceData::getPorts() const {
     return ports;
+}
+
+void MicroserviceData::setFlagsVisible(bool visible){
+    foreach (QCheckBox *checkBox, flagCheckBoxes) {
+        if (visible) {
+            flagsLayout->addWidget(checkBox);
+            checkBox->show();
+        } else {
+            flagsLayout->removeWidget(checkBox);
+            checkBox->hide();
+        }
+    }
+}
+
+QHBoxLayout* MicroserviceData::getFlagsLayout() const {
+    return flagsLayout;
+}
+
+void MicroserviceData::addFlag(const QString flag, bool visible, bool check) {
+    QCheckBox *flagCheckBox = new QCheckBox(flag);
+    flagCheckBox->setChecked(check);
+    flagCheckBoxes.append(flagCheckBox);
+
+    if (visible) {
+        flagsLayout->addWidget(flagCheckBox);
+    }
+
+    QObject *context = new QObject(flagCheckBox);
+
+    flagCheckBox->connect(flagCheckBox, &QCheckBox::stateChanged, context, [this]() {
+        updateEnabledFlagsLabel();
+    });
+}
+
+QStringList MicroserviceData::getEnabledFlags() const {
+    QStringList enabledFlags;
+    foreach (QCheckBox *checkBox, flagCheckBoxes) {
+        if (checkBox->isChecked()) {
+            enabledFlags << checkBox->text();
+        }
+    }
+
+    return enabledFlags;
+}
+
+QVector<QCheckBox*> MicroserviceData::getFlagCheckBoxes() const {
+    return flagCheckBoxes;
+}
+
+void MicroserviceData::updateEnabledFlagsLabel() {
+    QStringList enabledFlags = getEnabledFlags();
+    QString enabledFlagsText = enabledFlags.join(", ");
+    enabledFlagsLabel->setText(enabledFlagsText);
+}
+
+QLabel* MicroserviceData::getEnabledFlagsLabel() const {
+    return enabledFlagsLabel;
 }

@@ -12,6 +12,7 @@ Model::Model()
     , directory(findDirectory())
     , microservices(getFolderNames(), directory)
     , newTabDelay(getNewTabDelayFromConfigFile())
+    , flagNames(loadFlagNames())
 {}
 
 QString Model::getConfigFile() const {
@@ -180,4 +181,26 @@ float Model::getNewTabDelayFromConfigFile() const {
 
 float Model::getNewTabDelay() const {
     return newTabDelay;
+}
+
+QStringList Model::loadFlagNames() {
+    QSettings settings(getSaveFile(), QSettings::IniFormat);
+    QStringList names;
+
+    settings.beginGroup("SettingsState");
+    if (settings.contains("flags")) {
+        names = settings.value("flags").toStringList();
+    }
+
+    settings.endGroup();
+
+    return names;
+}
+
+QStringList Model::getFlagNames() const {
+    return flagNames;
+}
+
+void Model::addFlagName(const QString& flagName) {
+    flagNames.append(flagName);
 }

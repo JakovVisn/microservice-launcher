@@ -15,7 +15,7 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    setWindowTitle("Microservice Launcher (V1.9.0)");
+    setWindowTitle("Microservice Launcher (V2.0.0)");
 
     model = new Model();
     controller = new Controller(model);
@@ -67,28 +67,46 @@ MainWindow::MainWindow(QWidget *parent)
     mainLayout->addWidget(scrollArea);
 
     QSettings settings(model->getSaveFile(), QSettings::IniFormat);
-    settings.beginGroup("CheckBoxState");
     QMap<QString, MicroserviceData*> microservicesMap = model->getMicroservices().getDataMap();
     QMap<QString, MicroserviceData*>::const_iterator iter;
     for (iter = microservicesMap.constBegin(); iter != microservicesMap.constEnd(); ++iter) {
         const QString &folderName = iter.key();
 
         if (saveCheckBox->isChecked()) {
+            settings.beginGroup("CheckBoxState");
             bool isChecked = settings.value(folderName, false).toBool();
             iter.value()->setCheckBoxChecked(isChecked);
+            settings.endGroup();
         }
+
+        settings.beginGroup("Flag_"+iter.key());
+        foreach (QString flag, model->getFlagNames()) {
+            bool isChecked = settings.value(flag, false).toBool();
+            iter.value()->addFlag(flag, enableFlagsCheckBox->isChecked(), saveCheckBox->isChecked() ? isChecked : false);
+        }
+
+        settings.endGroup();
 
         QHBoxLayout *rowLayout = new QHBoxLayout;
         rowLayout->setAlignment(Qt::AlignLeft);
         rowLayout->setSpacing(10);
         rowLayout->addWidget(iter.value()->getStatusCheckBox());
         rowLayout->addWidget(iter.value()->getCheckBox());
-        contentLayout->addLayout(rowLayout);
+        rowLayout->addWidget(iter.value()->getEnabledFlagsLabel());
+
+        QVBoxLayout *microserviceLayout = new QVBoxLayout;
+        microserviceLayout->addLayout(rowLayout);
+        contentLayout->addLayout(microserviceLayout);
+
+        QHBoxLayout *flagsLayoutWithIndent = new QHBoxLayout;
+        flagsLayoutWithIndent->addSpacing(35);
+        flagsLayoutWithIndent->addLayout(iter.value()->getFlagsLayout());
+
+        microserviceLayout->addLayout(flagsLayoutWithIndent);
 
         iter.value()->refreshCheckboxState();
+        iter.value()->updateEnabledFlagsLabel();
     }
-
-    settings.endGroup();
 
     readWindowSizeFromConfig();
     resize(width, height);
@@ -333,15 +351,34 @@ void MainWindow::onRefreshButtonClicked() {
 void MainWindow::loadSettings() {
     QSettings settings(model->getSaveFile(), QSettings::IniFormat);
 
-    settings.beginGroup("CheckBoxSaveState");
+    settings.beginGroup("SettingsState");
     bool isSaveChecked = settings.value("save", false).toBool();
+    bool isEnableFlagsChecked = false;
+
+    if (isSaveChecked) {
+        isEnableFlagsChecked = settings.value("enableFlags", false).toBool();
+    }
+
     settings.endGroup();
 
     saveCheckBox = new QAction("Save&&Exit", this);
     saveCheckBox->setCheckable(true);
     saveCheckBox->setChecked(isSaveChecked);
-
     settingsMenu->addAction(saveCheckBox);
+
+    QMenu *flagsSubMenu = new QMenu("Flags", this);
+
+    enableFlagsCheckBox = new QAction("Enable Flags", this);
+    enableFlagsCheckBox->setCheckable(true);
+    enableFlagsCheckBox->setChecked(isEnableFlagsChecked);
+    connect(enableFlagsCheckBox, &QAction::toggled, this, &MainWindow::onEnableFlagsStateChanged);
+    flagsSubMenu->addAction(enableFlagsCheckBox);
+
+    QAction *addFlagAction = new QAction("Add New Flag", this);
+    connect(addFlagAction, &QAction::triggered, this, &MainWindow::onAddFlagClicked);
+    flagsSubMenu->addAction(addFlagAction);
+
+    settingsMenu->addMenu(flagsSubMenu);
 
     QAction *addCommandAction = new QAction("Add New Command", this);
     connect(addCommandAction, &QAction::triggered, this, &MainWindow::onAddCommandClicked);
@@ -490,7 +527,7 @@ void MainWindow::onCustomButtonClicked(const QString &commandName) {
             }
 
             QStringList args;
-            args << processName << iter.value()->getShortName() << commandArgs;
+            args << processName << iter.value()->getShortName() << commandArgs << iter.value()->getEnabledFlags();
 
             controller->executeScript(commandName, args);
         }
@@ -536,8 +573,78 @@ void MainWindow::saveCheckBoxStateToFile() {
 
     settings.endGroup();
 
-    settings.beginGroup("CheckBoxSaveState");
+    settings.beginGroup("SettingsState");
     settings.setValue("save", saveCheckBox->isChecked());
+    settings.setValue("enableFlags", enableFlagsCheckBox->isChecked());
 
     settings.endGroup();
+
+    saveFlagsStateToFile();
+}
+
+void MainWindow::saveFlagsStateToFile() {
+    QSettings settings(model->getSaveFile(), QSettings::IniFormat);
+
+    settings.beginGroup("SettingsState");
+    settings.setValue("flags", model->getFlagNames());
+    settings.endGroup();
+
+    QMap<QString, MicroserviceData*> microservicesMap = model->getMicroservices().getDataMap();
+    QMap<QString, MicroserviceData*>::const_iterator iter;
+    for (iter = microservicesMap.constBegin(); iter != microservicesMap.constEnd(); ++iter) {
+        settings.beginGroup("Flag_" + iter.key());
+
+        foreach (QCheckBox *checkBox, iter.value()->getFlagCheckBoxes()) {
+            settings.setValue(checkBox->text(), checkBox->isChecked());
+        }
+
+        settings.endGroup();
+    }
+}
+
+void MainWindow::onEnableFlagsStateChanged(bool enabled) {
+    QMap<QString, MicroserviceData*> microservicesMap = model->getMicroservices().getDataMap();
+    QMap<QString, MicroserviceData*>::const_iterator iter;
+    for (iter = microservicesMap.constBegin(); iter != microservicesMap.constEnd(); ++iter) {
+        iter.value()->setFlagsVisible(enabled);
+    }
+}
+
+void MainWindow::onAddFlagClicked() {
+    QDialog dialog(this);
+    dialog.setWindowTitle("Add New Flag");
+
+    QVBoxLayout *layout = new QVBoxLayout(&dialog);
+
+    QHBoxLayout *flagLayout = new QHBoxLayout;
+    QLabel *flagLabel = new QLabel("Enter the new flag (Required):", &dialog);
+    QLineEdit *flagLineEdit = new QLineEdit(&dialog);
+    flagLineEdit->setPlaceholderText("My Flag");
+    flagLayout->addWidget(flagLabel);
+    flagLayout->addWidget(flagLineEdit);
+    layout->addLayout(flagLayout);
+
+    QDialogButtonBox buttonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, Qt::Horizontal, &dialog);
+    layout->addWidget(&buttonBox);
+
+    auto checkFields = [&](){
+        bool fieldsFilled = !flagLineEdit->text().isEmpty();
+        buttonBox.button(QDialogButtonBox::Ok)->setEnabled(fieldsFilled);
+    };
+
+    connect(flagLineEdit, &QLineEdit::textChanged, this, checkFields);
+
+    checkFields();
+
+    QObject::connect(&buttonBox, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+    QObject::connect(&buttonBox, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+
+    if (dialog.exec() != QDialog::Accepted) {
+        return;
+    }
+
+    QString newFlag = flagLineEdit->text();
+
+    model->addFlagName(newFlag);
+    controller->addFlag(newFlag, enableFlagsCheckBox->isChecked());
 }

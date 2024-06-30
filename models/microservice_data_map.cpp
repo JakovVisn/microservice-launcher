@@ -1,6 +1,6 @@
 #include "microservice_data_map.h"
 
-MicroserviceDataMap::MicroserviceDataMap(const QStringList serviceNames, const QString directory){
+MicroserviceDataMap::MicroserviceDataMap(const QStringList serviceNames, const QString directory) {
     for (const QString &name : serviceNames) {
         MicroserviceData *microservice = new MicroserviceData(name, directory);
         dataMap.insert(name, microservice);

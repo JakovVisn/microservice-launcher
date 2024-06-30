@@ -33,6 +33,8 @@ private slots:
     void onAddCommandClicked();
     void onAddSaveClicked();
     void onCustomButtonClicked(const QString &commandName);
+    void onEnableFlagsStateChanged(bool enabled);
+    void onAddFlagClicked();
 
 private:
     void readWindowSizeFromConfig();
@@ -41,6 +43,7 @@ private:
     void loadCommandsFromConfigFile();
     void loadMainWindowButtonsFromConfigFile();
     void saveCheckBoxStateToFile();
+    void saveFlagsStateToFile();
 
     Ui::MainWindow *ui;
     Model* model;
@@ -49,6 +52,7 @@ private:
     QLineEdit *searchLineEdit;
 
     QAction *saveCheckBox;
+    QAction *enableFlagsCheckBox;
     QVBoxLayout *mainLayout;
     QMenuBar *menuBar;
     QMenu *saveMenu;

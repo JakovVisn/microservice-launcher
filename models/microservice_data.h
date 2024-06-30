@@ -4,6 +4,8 @@
 #include "microservice_status.h"
 
 #include <QCheckBox>
+#include <QVBoxLayout>
+#include <QLabel>
 
 class Model;
 
@@ -18,6 +20,15 @@ public:
     void setCheckBoxChecked(bool checked);
     QCheckBox* getCheckBox();
     QCheckBox* getStatusCheckBox();
+    QHBoxLayout* getFlagsLayout() const;
+    void addFlag(const QString flag, bool visible, bool check = false);
+    void setFlagsVisible(bool visible);
+    QStringList getEnabledFlags() const;
+    QVector<QCheckBox*> getFlagCheckBoxes() const;
+    QLabel* getEnabledFlagsLabel() const;
+
+public slots:
+    void updateEnabledFlagsLabel();
 
 private:
     bool isServiceRunning() const;
@@ -33,6 +44,9 @@ private:
     QCheckBox* checkBox;
     QCheckBox* statusCheckBox;
     const QVector<int> ports;
+    QVector<QCheckBox*> flagCheckBoxes;
+    QHBoxLayout *flagsLayout;
+    QLabel *enabledFlagsLabel;
 };
 
 #endif // MICROSERVICE_DATA_H

@@ -23,6 +23,7 @@ public:
     QStringList getCommandArgs(const QString &commandName) const;
     QMap<QString, Command*> getCommands() const;
     void addCommand(const QString &name, const QString &command, const QStringList &args, const float delay, const QStringList &excludedServices, const int buttonSize, const bool executeForSelected, const QString &scriptName);
+    void addFlag(const QString &flag, bool visible);
 
 private:
     Model* model;

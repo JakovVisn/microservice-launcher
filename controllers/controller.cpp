@@ -54,7 +54,7 @@ void Controller::start(MicroserviceData* microservice) {
     }
 
     QStringList args;
-    args << microservice->getName() << microservice->getShortName();
+    args << microservice->getName() << microservice->getShortName() << microservice->getEnabledFlags();
 
     executeScript("Start", args);
 }
@@ -178,4 +178,16 @@ QMap<QString, Command*> Controller::getCommands() const {
 void Controller::addCommand(const QString &name, const QString &command, const QStringList &args, const float delay, const QStringList &excludedServices, const int buttonSize, const bool executeForSelected, const QString &scriptName) {
     Command *cmd = new Command(name, command, args, delay, excludedServices, buttonSize, executeForSelected, scriptName);
     commands.insert(name, cmd);
+}
+
+void Controller::addFlag(const QString &flag, bool visible) {
+    if (flag.isEmpty()) {
+        return;
+    }
+
+    QMap<QString, MicroserviceData*> microservicesMap = model->getMicroservices().getDataMap();
+    QMap<QString, MicroserviceData*>::const_iterator iter;
+    for (iter = microservicesMap.constBegin(); iter != microservicesMap.constEnd(); ++iter) {
+        iter.value()->addFlag(flag, visible);
+    }
 }

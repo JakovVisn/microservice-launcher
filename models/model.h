@@ -4,8 +4,6 @@
 #include <QtWidgets/qcheckbox.h>
 #include "microservice_data_map.h"
 
-class MicroserviceData;
-
 class Model
 {
 public:
@@ -18,6 +16,8 @@ public:
     QString getSaveFile() const;
     float getNewTabDelayFromConfigFile() const;
     float getNewTabDelay() const;
+    QStringList getFlagNames() const;
+    void addFlagName(const QString& flagName);
 
 private:
     QString readDirectory() const;
@@ -25,6 +25,7 @@ private:
     QString createEmptyFile(const QString fileName) const;
     QString findDirectory() const;
     QStringList getFolderNames() const;
+    QStringList loadFlagNames();
 
     const QString defaultConfigFile;
     const QString defaultSaveFile;
@@ -33,6 +34,8 @@ private:
     MicroserviceDataMap microservices;
 
     const float newTabDelay;
+
+    QStringList flagNames;
 };
 
 #endif // MODEL_H
