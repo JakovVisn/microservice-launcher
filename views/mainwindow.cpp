@@ -361,7 +361,7 @@ void MainWindow::loadSettings() {
 
     settings.endGroup();
 
-    saveCheckBox = new QAction("Save&&Exit", this);
+    saveCheckBox = new QAction("Save State on Exit", this);
     saveCheckBox->setCheckable(true);
     saveCheckBox->setChecked(isSaveChecked);
     settingsMenu->addAction(saveCheckBox);
