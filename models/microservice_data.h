@@ -26,6 +26,7 @@ public:
     QStringList getEnabledFlags() const;
     QVector<QCheckBox*> getFlagCheckBoxes() const;
     QLabel* getEnabledFlagsLabel() const;
+    void updateFlagState(const QString flag, const Qt::CheckState state) const;
 
 public slots:
     void updateEnabledFlagsLabel();

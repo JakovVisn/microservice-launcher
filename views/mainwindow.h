@@ -35,6 +35,8 @@ private slots:
     void onCustomButtonClicked(const QString &commandName);
     void onEnableFlagsStateChanged(bool enabled);
     void onAddFlagClicked();
+    void onApplyFlagToAllServices(const QString &flag);
+    void onRemoveFlagFromAllServicesClicked(const QString &flag);
 
 private:
     void readWindowSizeFromConfig();

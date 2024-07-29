@@ -15,7 +15,7 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    setWindowTitle("Microservice Launcher (V2.0.0)");
+    setWindowTitle("Microservice Launcher (V2.0.1)");
 
     model = new Model();
     controller = new Controller(model);
@@ -290,8 +290,13 @@ void MainWindow::onAddSaveClicked() {
     settings.endGroup();
 
     settings.beginGroup("Save");
-    QString newSaveKey = "action" + QString::number(settings.childKeys().count() + 1);
-    settings.setValue(newSaveKey, newSaveName);
+    QStringList actions;
+    if (settings.contains("services")) {
+        actions = settings.value("services").toStringList();
+    }
+
+    actions.append(newSaveName);
+    settings.setValue("services", actions);
     settings.endGroup();
 
     saveMenu->clear();
@@ -359,6 +364,11 @@ void MainWindow::loadSettings() {
         isEnableFlagsChecked = settings.value("enableFlags", false).toBool();
     }
 
+    QStringList flags;
+    if (settings.contains("flags")) {
+        flags = settings.value("flags").toStringList();
+    }
+
     settings.endGroup();
 
     saveCheckBox = new QAction("Save State on Exit", this);
@@ -378,6 +388,25 @@ void MainWindow::loadSettings() {
     connect(addFlagAction, &QAction::triggered, this, &MainWindow::onAddFlagClicked);
     flagsSubMenu->addAction(addFlagAction);
 
+    QMenu *applyFlagsToAllServicesSubMenu = new QMenu("Apply Flags to All Services", this);
+    QMenu *removeFlagsFromAllServicesSubMenu = new QMenu("Remove Flags from All Services", this);
+    for (const QString& flag : flags) {
+        QAction *applyFlagAction = new QAction(flag, this);
+        connect(applyFlagAction, &QAction::triggered, this, [this, flag]() {
+            onApplyFlagToAllServices(flag);
+        });
+        applyFlagsToAllServicesSubMenu->addAction(applyFlagAction);
+
+        QAction *removeFlagAction = new QAction(flag, this);
+        connect(removeFlagAction, &QAction::triggered, this, [this, flag]() {
+            onRemoveFlagFromAllServicesClicked(flag);
+        });
+        removeFlagsFromAllServicesSubMenu->addAction(removeFlagAction);
+    }
+
+    flagsSubMenu->addMenu(applyFlagsToAllServicesSubMenu);
+    flagsSubMenu->addMenu(removeFlagsFromAllServicesSubMenu);
+
     settingsMenu->addMenu(flagsSubMenu);
 
     QAction *addCommandAction = new QAction("Add New Command", this);
@@ -392,10 +421,13 @@ void MainWindow::loadSettings() {
 void MainWindow::loadSavesFromConfigFile() {
     QSettings settings(model->getConfigFile(), QSettings::IniFormat);
     settings.beginGroup("Save");
-    QStringList keys = settings.childKeys();
 
-    for (const QString& key : keys) {
-        QString actionName = settings.value(key).toString();
+    QStringList actionNames;
+    if (settings.contains("services")) {
+        actionNames = settings.value("services").toStringList();
+    }
+
+    for (const QString& actionName : actionNames) {
         QAction *action = new QAction(actionName, this);
 
         connect(action, &QAction::triggered, this, [this, actionName]() {
@@ -647,4 +679,12 @@ void MainWindow::onAddFlagClicked() {
 
     model->addFlagName(newFlag);
     controller->addFlag(newFlag, enableFlagsCheckBox->isChecked());
+}
+
+void MainWindow::onApplyFlagToAllServices(const QString &flag) {
+    controller->updateFlagStateForAllServices(flag, Qt::Checked);
+}
+
+void MainWindow::onRemoveFlagFromAllServicesClicked(const QString &flag) {
+    controller->updateFlagStateForAllServices(flag, Qt::Unchecked);
 }

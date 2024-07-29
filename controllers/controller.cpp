@@ -191,3 +191,11 @@ void Controller::addFlag(const QString &flag, bool visible) {
         iter.value()->addFlag(flag, visible);
     }
 }
+
+void Controller::updateFlagStateForAllServices(const QString &flag, const Qt::CheckState state) {
+    QMap<QString, MicroserviceData*> microservicesMap = model->getMicroservices().getDataMap();
+    QMap<QString, MicroserviceData*>::const_iterator iter;
+    for (iter = microservicesMap.constBegin(); iter != microservicesMap.constEnd(); ++iter) {
+        iter.value()->updateFlagState(flag, state);
+    }
+};

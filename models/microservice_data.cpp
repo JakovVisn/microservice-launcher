@@ -233,3 +233,11 @@ void MicroserviceData::updateEnabledFlagsLabel() {
 QLabel* MicroserviceData::getEnabledFlagsLabel() const {
     return enabledFlagsLabel;
 }
+
+void MicroserviceData::updateFlagState(const QString flag, const Qt::CheckState state) const {
+    foreach (QCheckBox *checkBox, flagCheckBoxes) {
+        if (checkBox->text() == flag) {
+            checkBox->setCheckState(state);
+        }
+    }
+}
