@@ -27,6 +27,7 @@ public:
     QVector<QCheckBox*> getFlagCheckBoxes() const;
     QLabel* getEnabledFlagsLabel() const;
     void updateFlagState(const QString flag, const Qt::CheckState state) const;
+    int getPid() const;
 
 public slots:
     void updateEnabledFlagsLabel();
@@ -34,7 +35,6 @@ public slots:
 private:
     bool isServiceRunning() const;
     bool checkDebug() const;
-    int getPid() const;
     QString readApplicationShortNameFromFile(const QString& filePath) const;
     QString getFolderInfo() const;
     QVector<int> readPortsFromFile(const QString directory) const;

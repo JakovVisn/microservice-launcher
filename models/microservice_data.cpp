@@ -95,23 +95,45 @@ QString MicroserviceData::getFolderInfo() const {
 }
 
 int MicroserviceData::getPid() const {
-    QString cmd = "pgrep -x " + name;
-    std::array<char, 128> buffer;
-    std::string result;
-    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.toStdString().c_str(), "r"), pclose);
-    if (!pipe) {
-        throw std::runtime_error("popen() failed!");
+    QProcess process;
+    QStringList arguments;
+
+    #if defined(Q_OS_LINUX)
+        arguments << "-C" << name << "-o" << "pid=";
+        process.start("ps", arguments);
+    #elif defined(Q_OS_MACOS)
+        arguments << "-x" << name;
+        process.start("pgrep", arguments);
+    #else
+        qWarning() << "Platform not supported";
+        return -1;
+    #endif
+
+    if (!process.waitForStarted()) {
+        qWarning() << "Failed to start process";
+        return -1;
     }
 
-    while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
-        result += buffer.data();
+    process.waitForFinished();
+
+    if (process.exitStatus() != QProcess::NormalExit) {
+        qWarning() << "Process did not exit normally";
+        return -1;
     }
 
-    if (!result.empty()) {
-        return std::stoi(result);
-    } else {
+    QString output = process.readAllStandardOutput().trimmed();
+    if (output.isEmpty()) {
         return -1; // Return -1 if process is not found
     }
+
+    bool ok;
+    int pid = output.toInt(&ok);
+    if (!ok) {
+        qWarning() << "Failed to convert output to PID";
+        return -1;
+    }
+
+    return pid;
 }
 
 bool MicroserviceData::checkDebug() const {

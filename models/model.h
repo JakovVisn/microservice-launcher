@@ -10,7 +10,6 @@ public:
     explicit Model();
     QString getConfigFile() const;
     MicroserviceDataMap getMicroservices() const;
-    int getPidByName(const QString& processName) const;
     QString getDirectory() const;
     int getProcessID(const QString& processName) const;
     QString getSaveFile() const;

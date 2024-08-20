@@ -59,26 +59,6 @@ QString Model::getDirectory() const
     return directory;
 }
 
-int Model::getPidByName(const QString& processName) const {
-    QString cmd = "pgrep -x " + processName;
-    std::array<char, 128> buffer;
-    std::string result;
-    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.toStdString().c_str(), "r"), pclose);
-    if (!pipe) {
-        throw std::runtime_error("popen() failed!");
-    }
-
-    while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
-        result += buffer.data();
-    }
-
-    if (!result.empty()) {
-        return std::stoi(result);
-    } else {
-        return -1; // Return -1 if process is not found
-    }
-}
-
 QString Model::createEmptyFile(const QString fileName) const {
     const QString& appPath = QCoreApplication::applicationDirPath() + fileName;
     QFile file(appPath);
@@ -133,7 +113,7 @@ MicroserviceDataMap Model::getMicroservices() const {
 }
 
 int Model::getProcessID(const QString& processName) const {
-    int pid = getPidByName(processName);
+    int pid = microservices.value(processName)->getPid();
     if (pid != -1) {
         return pid;
     }
