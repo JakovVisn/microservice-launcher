@@ -24,6 +24,19 @@ QVector<MicroserviceData*> MicroserviceDataMap::getCheckedServices() {
     return checkedCheckBoxes;
 }
 
+QVector<MicroserviceData*> MicroserviceDataMap::getServicesByStatus(const MicroserviceStatus& status) const {
+    QVector<MicroserviceData*> servicesWithStatus;
+
+    QMap<QString, MicroserviceData*>::const_iterator iter;
+    for (iter = dataMap.constBegin(); iter != dataMap.constEnd(); ++iter) {
+        if (iter.value()->getStatus() == status) {
+            servicesWithStatus.append(iter.value());
+        }
+    }
+
+    return servicesWithStatus;
+}
+
 const QMap<QString, MicroserviceData*>& MicroserviceDataMap::getDataMap() const {
     return dataMap;
 }

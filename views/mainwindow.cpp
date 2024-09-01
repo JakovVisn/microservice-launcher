@@ -12,10 +12,12 @@
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
+    , servicesStatusLabel(new QLabel(this))
 {
     ui->setupUi(this);
 
-    setWindowTitle("Microservice Launcher (V2.0.1)");
+    setWindowTitle("Microservice Launcher (V2.0.2)");
+    statusBar()->addPermanentWidget(servicesStatusLabel);
 
     model = new Model();
     controller = new Controller(model);
@@ -110,6 +112,18 @@ MainWindow::MainWindow(QWidget *parent)
 
     readWindowSizeFromConfig();
     resize(width, height);
+    updateServicesStatus();
+}
+
+void MainWindow::updateServicesStatus()
+{
+    int totalServices = model->getMicroservices().getDataMap().size();
+    int activeServices = model->getMicroservices().getServicesByStatus(MicroserviceStatus::Active).size();
+    int debugServices = model->getMicroservices().getServicesByStatus(MicroserviceStatus::Debug).size();
+
+    int runningServices = activeServices + debugServices;
+
+    servicesStatusLabel->setText(QString("Running services: %1/%2").arg(runningServices).arg(totalServices));
 }
 
 void MainWindow::onAddCommandClicked() {
@@ -351,6 +365,7 @@ void MainWindow::onStopButtonClicked() {
 
 void MainWindow::onRefreshButtonClicked() {
     controller->refresh();
+    updateServicesStatus();
 }
 
 void MainWindow::loadSettings() {

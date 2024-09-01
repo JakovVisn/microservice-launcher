@@ -46,6 +46,7 @@ private:
     void loadMainWindowButtonsFromConfigFile();
     void saveCheckBoxStateToFile();
     void saveFlagsStateToFile();
+    void updateServicesStatus();
 
     Ui::MainWindow *ui;
     Model* model;
@@ -60,6 +61,7 @@ private:
     QMenu *saveMenu;
     QMenu *commandMenu;
     QMenu *settingsMenu;
+    QLabel *servicesStatusLabel;
 
     int width;
     int height;

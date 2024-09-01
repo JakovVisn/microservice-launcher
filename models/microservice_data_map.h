@@ -8,6 +8,7 @@ public:
     MicroserviceDataMap(const QStringList serviceNames, const QString directory);
     MicroserviceData* value(const QString& key) const;
     QVector<MicroserviceData*> getCheckedServices();
+    QVector<MicroserviceData*> getServicesByStatus(const MicroserviceStatus& status) const;
     const QMap<QString, MicroserviceData*>& getDataMap() const;
     bool contains(const QString& key) const;
 
