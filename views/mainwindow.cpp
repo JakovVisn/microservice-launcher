@@ -16,7 +16,7 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    setWindowTitle("Microservice Launcher (V2.0.2)");
+    setWindowTitle("Microservice Launcher (V2.0.3)");
     statusBar()->addPermanentWidget(servicesStatusLabel);
 
     model = new Model();
@@ -339,30 +339,6 @@ void MainWindow::onDeselectAllButtonClicked() {
     controller->deselectAll();
 }
 
-void MainWindow::onStartButtonClicked() {
-    QMap<QString, MicroserviceData*> microservicesMap = model->getMicroservices().getDataMap();
-    QMap<QString, MicroserviceData*>::const_iterator iter;
-    for (iter = microservicesMap.constBegin(); iter != microservicesMap.constEnd(); ++iter) {
-        if (iter.value()->getCheckBox()->isChecked()) {
-            QString folderName = iter.key();
-            qDebug() << "Trying to launch service:" << folderName;
-
-            controller->start(iter.value());
-        }
-    }
-}
-
-void MainWindow::onStopButtonClicked() {
-    QMap<QString, MicroserviceData*> microservicesMap = model->getMicroservices().getDataMap();
-    QMap<QString, MicroserviceData*>::const_iterator iter;
-    for (iter = microservicesMap.constBegin(); iter != microservicesMap.constEnd(); ++iter) {
-        if (iter.value()->getCheckBox()->isChecked()) {
-            QString processName = iter.key();
-            controller->stop(processName);
-        }
-    }
-}
-
 void MainWindow::onRefreshButtonClicked() {
     controller->refresh();
     updateServicesStatus();
@@ -466,10 +442,6 @@ void MainWindow::loadCommandsFromConfigFile() {
             connect(action, &QAction::triggered, this, &MainWindow::onSelectAllButtonClicked);
         } else if (commandName == "Deselect All") {
             connect(action, &QAction::triggered, this, &MainWindow::onDeselectAllButtonClicked);
-        } else if (commandName == "Start") {
-            connect(action, &QAction::triggered, this, &MainWindow::onStartButtonClicked);
-        } else if (commandName == "Stop") {
-            connect(action, &QAction::triggered, this, &MainWindow::onStopButtonClicked);
         } else if (commandName == "Refresh") {
             connect(action, &QAction::triggered, this, &MainWindow::onRefreshButtonClicked);
         } else {
@@ -503,10 +475,6 @@ void MainWindow::loadMainWindowButtonsFromConfigFile() {
                 connect(pushButton, &QPushButton::clicked, this, &MainWindow::onSelectAllButtonClicked);
             } else if (commandName == "Deselect All") {
                 connect(pushButton, &QPushButton::clicked, this, &MainWindow::onDeselectAllButtonClicked);
-            } else if (commandName == "Start") {
-                connect(pushButton, &QPushButton::clicked, this, &MainWindow::onStartButtonClicked);
-            } else if (commandName == "Stop") {
-                connect(pushButton, &QPushButton::clicked, this, &MainWindow::onStopButtonClicked);
             } else if (commandName == "Refresh") {
                 connect(pushButton, &QPushButton::clicked, this, &MainWindow::onRefreshButtonClicked);
             } else {
@@ -526,58 +494,78 @@ void MainWindow::loadMainWindowButtonsFromConfigFile() {
 
 void MainWindow::onCustomButtonClicked(const QString &commandName) {
     QStringList commandArgs;
+
     if (!controller->getCommandArgs(commandName).isEmpty()) {
-        QDialog dialog(this);
-        dialog.setWindowTitle(tr("Enter Command Arguments"));
-        dialog.setMinimumWidth(dialog.windowTitle().size()*12);
-
-        QVBoxLayout *layout = new QVBoxLayout(&dialog);
-
-        QStringList commandArgumentNames = controller->getCommandArgs(commandName);
-        foreach (const QString &argument, commandArgumentNames) {
-            QLineEdit *lineEdit = new QLineEdit(&dialog);
-            lineEdit->setPlaceholderText(argument);
-            layout->addWidget(lineEdit);
-        }
-
-        QDialogButtonBox buttonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, Qt::Horizontal, &dialog);
-        layout->addWidget(&buttonBox);
-
-        QObject::connect(&buttonBox, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
-        QObject::connect(&buttonBox, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
-
-        if (dialog.exec() != QDialog::Accepted) {
-            return;
-        }
-
-        foreach (QObject *obj, dialog.children()) {
-            QLineEdit *lineEdit = qobject_cast<QLineEdit*>(obj);
-            if (lineEdit) {
-                commandArgs << lineEdit->text();
-            }
+        commandArgs = getCommandArguments(commandName);
+        if (commandArgs.isEmpty()) {
+            return; // Exit if dialog was closed without accepting
         }
     }
 
     if (!controller->getCommandExecuteForSelected(commandName)) {
         controller->executeScript(commandName, commandArgs);
     } else {
-        QMap<QString, MicroserviceData*> microservicesMap = model->getMicroservices().getDataMap();
-        QMap<QString, MicroserviceData*>::const_iterator iter;
-        for (iter = microservicesMap.constBegin(); iter != microservicesMap.constEnd(); ++iter) {
-            if (!iter.value()->getCheckBox()->isChecked()) {
-                continue;
-            }
+        executeForSelectedMicroservices(commandName, commandArgs);
+    }
+}
 
-            QString processName = iter.key();
-            if (controller->getCommandExcludedServices(commandName).contains(processName)) {
-                continue;
-            }
+QStringList MainWindow::getCommandArguments(const QString &commandName) {
+    QDialog dialog(this);
+    dialog.setWindowTitle(tr("Enter Command Arguments"));
+    dialog.setMinimumWidth(dialog.windowTitle().size() * 12);
 
-            QStringList args;
-            args << processName << iter.value()->getShortName() << commandArgs << iter.value()->getEnabledFlags();
+    QVBoxLayout *layout = new QVBoxLayout(&dialog);
+    QStringList commandArgumentNames = controller->getCommandArgs(commandName);
 
-            controller->executeScript(commandName, args);
+    for (const QString &argument : commandArgumentNames) {
+        QLineEdit *lineEdit = new QLineEdit(&dialog);
+        lineEdit->setPlaceholderText(argument);
+        layout->addWidget(lineEdit);
+    }
+
+    QDialogButtonBox buttonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, Qt::Horizontal, &dialog);
+    layout->addWidget(&buttonBox);
+
+    connect(&buttonBox, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+    connect(&buttonBox, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+
+    if (dialog.exec() != QDialog::Accepted) {
+        return QStringList(); // Return empty list if dialog is closed
+    }
+
+    QStringList args;
+    foreach (QObject *obj, dialog.children()) {
+        if (QLineEdit *lineEdit = qobject_cast<QLineEdit*>(obj)) {
+            args << lineEdit->text();
         }
+    }
+
+    return args;
+}
+
+void MainWindow::executeForSelectedMicroservices(const QString &commandName, const QStringList &commandArgs) {
+    QMap<QString, MicroserviceData*> microservicesMap = model->getMicroservices().getDataMap();
+    for (auto iter = microservicesMap.constBegin(); iter != microservicesMap.constEnd(); ++iter) {
+        if (!iter.value()->getCheckBox()->isChecked()) {
+            continue; // Skip if checkbox is not checked
+        }
+
+        QString processName = iter.key();
+        if (controller->getCommandExcludedServices(commandName).contains(processName)) {
+            continue; // Skip excluded services
+        }
+
+        iter.value()->refreshCheckboxState();
+        QString pid = iter.value()->getPIDByPorts();
+
+        QStringList args;
+        args << processName
+             << iter.value()->getShortName()
+             << pid
+             << commandArgs
+             << iter.value()->getEnabledFlags();
+
+        controller->executeScript(commandName, args);
     }
 }
 

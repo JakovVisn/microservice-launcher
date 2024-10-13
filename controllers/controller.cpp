@@ -1,8 +1,5 @@
 #include "controller.h"
 #include "models/microservice_data.h"
-#include "models/microservice_status.h"
-
-#include <csignal>
 
 #include <QtCore/qprocess.h>
 #include <QSettings>
@@ -46,24 +43,6 @@ void Controller::loadCommandsFromConfig() {
     }
 }
 
-void Controller::start(MicroserviceData* microservice) {
-    microservice->refreshCheckboxState();
-    if (microservice->getStatus() != MicroserviceStatus::Inactive) {
-        qDebug() << "Process" << microservice->getName() << "is already running or in debug mode.";
-        return;
-    }
-
-    QStringList args;
-    args << microservice->getName() << microservice->getShortName() << microservice->getEnabledFlags();
-
-    executeScript("Start", args);
-}
-
-void Controller::stop(const QString& processName) {
-    qDebug() << "Trying to stop service:" << processName;
-    stopProcess(processName);
-};
-
 void Controller::refresh() {
     QMap<QString, MicroserviceData*> microservicesMap = model->getMicroservices().getDataMap();
     QMap<QString, MicroserviceData*>::const_iterator iter;
@@ -71,17 +50,6 @@ void Controller::refresh() {
         iter.value()->refreshCheckboxState();
     }
 };
-
-void Controller::stopProcess(const QString& processName) const {
-    int processID = model->getProcessID(processName);
-    if (processID == -1) {
-        qDebug() << "Process" << processName << "not found. Cannot stop.";
-        return;
-    }
-
-    ::kill(processID, SIGINT);
-    qDebug() << "Sent SIGINT to stop process" << processName;
-}
 
 void Controller::selectAll() {
     QMap<QString, MicroserviceData*> microservicesMap = model->getMicroservices().getDataMap();
@@ -115,30 +83,45 @@ void Controller::selectDetermined(const QString &actionName) {
 
 void Controller::executeScript(const QString &commandName, const QStringList &additionalArgs) {
     QString scriptName = commands.value(commandName)->getScriptName();
-    QString command = commands.value(commandName)->getCommand();
-    QString newTabDelay = QString::number(model->getNewTabDelay());
-    QString customDelay = QString::number(commands.value(commandName)->getDelay());
-    QString workingDirectory = model->getDirectory();
 
     QProcess process;
     QStringList args;
-    args << command << newTabDelay << customDelay << workingDirectory << additionalArgs;
-    qDebug() << "args:" << args;
-    process.start(QCoreApplication::applicationDirPath() + "/" + scriptName, args);
+    args << commands.value(commandName)->getCommand()
+         << QString::number(model->getNewTabDelay())
+         << QString::number(commands.value(commandName)->getDelay())
+         << model->getDirectory()
+         << additionalArgs;
+
+    qDebug() << "Starting script:" << scriptName << "with args:" << args;
+    process.setProgram(QCoreApplication::applicationDirPath() + "/" + scriptName);
+    process.setArguments(args);
+
+    connect(&process, &QProcess::readyReadStandardOutput, [&process]() {
+        qDebug() << "Output:" << process.readAllStandardOutput();
+    });
+    connect(&process, &QProcess::readyReadStandardError, [&process]() {
+        qDebug() << "Error:" << process.readAllStandardError();
+    });
+
+    process.start();
+    if (!process.waitForStarted()) {
+        qDebug() << "Failed to start script:" << scriptName << "Error:" << process.errorString();
+        return;
+    }
+
     process.waitForFinished();
 
     if (process.exitCode() == 0) {
         qDebug() << "Command executed successfully.";
     } else {
-        QString errorOutput = process.readAllStandardError();
-        qDebug() << "Error executing shell script:" << errorOutput;
+        qDebug() << "Command failed with exit code:" << process.exitCode();
     }
 }
 
 int Controller::getCommandButtonSize(const QString &commandName) const{
     if (!commands.contains(commandName)) {
         QMessageBox::critical(nullptr, "Error", "Command not found: " + commandName);
-        QCoreApplication::quit();
+        exit(EXIT_FAILURE);
     }
 
     return commands.value(commandName)->getButtonSize();
@@ -147,7 +130,7 @@ int Controller::getCommandButtonSize(const QString &commandName) const{
 QStringList Controller::getCommandExcludedServices(const QString &commandName) const{
     if (!commands.contains(commandName)) {
         QMessageBox::critical(nullptr, "Error", "Command not found: " + commandName);
-        QCoreApplication::quit();
+        exit(EXIT_FAILURE);
     }
 
     return commands.value(commandName)->getExcludedServices();
@@ -156,7 +139,7 @@ QStringList Controller::getCommandExcludedServices(const QString &commandName) c
 QStringList Controller::getCommandArgs(const QString &commandName) const{
     if (!commands.contains(commandName)) {
         QMessageBox::critical(nullptr, "Error", "Command not found: " + commandName);
-        QCoreApplication::quit();
+        exit(EXIT_FAILURE);
     }
 
     return commands.value(commandName)->getArgs();
@@ -165,7 +148,7 @@ QStringList Controller::getCommandArgs(const QString &commandName) const{
 bool Controller::getCommandExecuteForSelected(const QString &commandName) const{
     if (!commands.contains(commandName)) {
         QMessageBox::critical(nullptr, "Error", "Command not found: " + commandName);
-        QCoreApplication::quit();
+        exit(EXIT_FAILURE);
     }
 
     return commands.value(commandName)->getExecuteForSelected();

@@ -2,6 +2,7 @@
 #include "microservice_data.h"
 
 #include <QDir>
+#include <QMessageBox>
 #include <QProcessEnvironment>
 #include <QSettings>
 #include <QCoreApplication>
@@ -29,8 +30,8 @@ QString Model::findDirectory() const {
 
     QDir initialDir(directory);
     if (directory.isEmpty() || !initialDir.exists()) {
-        qDebug() << "Directory "<< directory << " does not exist or is empty.";
-        throw std::runtime_error("Directory does not exist or is empty.");
+        QMessageBox::critical(nullptr, "Error", "Directory " + directory + " does not exist or is empty.");
+        exit(EXIT_FAILURE);
     }
 
     qDebug() << "initialDir: " << directory;
@@ -110,40 +111,6 @@ QStringList Model::readExcludedFoldersFromConfig() const {
 
 MicroserviceDataMap Model::getMicroservices() const {
     return microservices;
-}
-
-int Model::getProcessID(const QString& processName) const {
-    int pid = microservices.value(processName)->getPid();
-    if (pid != -1) {
-        return pid;
-    }
-
-    QVector<int> ports = microservices.value(processName)->getPorts();
-
-    if (ports.isEmpty()) {
-        qDebug() << "No ports found for folder" << processName;
-        return -1;
-    }
-
-    for (int port : ports) {
-        QString cmd = "lsof -i :" + QString::number(port) + " -t";
-        std::array<char, 128> buffer;
-        std::string result;
-        std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd.toStdString().c_str(), "r"), pclose);
-        if (!pipe) {
-            throw std::runtime_error("popen() failed!");
-        }
-
-        while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
-            result += buffer.data();
-        }
-
-        if (!result.empty()) {
-            return std::stoi(result);
-        }
-    }
-
-    return -1; // Return -1 if process is not found on any port
 }
 
 QString Model::getSaveFile() const {

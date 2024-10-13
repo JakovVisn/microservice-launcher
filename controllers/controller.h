@@ -12,8 +12,6 @@ public:
 
     void selectAll();
     void deselectAll();
-    void start(MicroserviceData* microservice);
-    void stop(const QString& processName);
     void refresh();
     void selectDetermined(const QString &actionName);
     void executeScript(const QString &commandName, const QStringList &additionalArgs = QStringList());
@@ -30,7 +28,6 @@ private:
     Model* model;
 
     void loadCommandsFromConfig();
-    void stopProcess(const QString& processName) const;
     QMap<QString, Command*> commands;
 };
 

@@ -24,8 +24,6 @@ public:
 private slots:
     void onSelectAllButtonClicked();
     void onDeselectAllButtonClicked();
-    void onStartButtonClicked();
-    void onStopButtonClicked();
     void onRefreshButtonClicked();
     void onSaveActionClicked(const QString &actionName);
     void onSearchLineEditTextChanged();
@@ -47,6 +45,8 @@ private:
     void saveCheckBoxStateToFile();
     void saveFlagsStateToFile();
     void updateServicesStatus();
+    QStringList getCommandArguments(const QString &commandName);
+    void executeForSelectedMicroservices(const QString &commandName, const QStringList &commandArgs);
 
     Ui::MainWindow *ui;
     Model* model;

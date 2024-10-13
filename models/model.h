@@ -11,7 +11,6 @@ public:
     QString getConfigFile() const;
     MicroserviceDataMap getMicroservices() const;
     QString getDirectory() const;
-    int getProcessID(const QString& processName) const;
     QString getSaveFile() const;
     float getNewTabDelayFromConfigFile() const;
     float getNewTabDelay() const;

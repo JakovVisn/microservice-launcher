@@ -28,6 +28,7 @@ public:
     QLabel* getEnabledFlagsLabel() const;
     void updateFlagState(const QString flag, const Qt::CheckState state) const;
     int getPid() const;
+    QString getPIDByPorts() const;
 
 public slots:
     void updateEnabledFlagsLabel();

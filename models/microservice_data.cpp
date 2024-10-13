@@ -3,10 +3,11 @@
 #include <QCoreApplication>
 #include <QProcessEnvironment>
 #include <QTcpSocket>
+#include <QDir>
 
 MicroserviceData::MicroserviceData(const QString name, const QString directory)
     : name(name)
-    , shortName(readApplicationShortNameFromFile(directory + "/" + name))
+    , shortName(readApplicationShortNameFromFile(QDir(directory).filePath(name)))
     , ports(readPortsFromFile(directory))
     , flagsLayout(new QHBoxLayout)
 {
@@ -28,7 +29,8 @@ QString MicroserviceData::readApplicationShortNameFromFile(const QString& filePa
     args << filePath;
 
     QProcess process;
-    process.start(QCoreApplication::applicationDirPath() + "/" + "short_name.sh", args);
+    QString scriptPath = QDir(QCoreApplication::applicationDirPath()).filePath("short_name.sh");
+    process.start(scriptPath, args);
     if (!process.waitForStarted() || !process.waitForFinished()) {
         qWarning() << "Failed to execute script:" << process.errorString();
         return QString();
@@ -41,14 +43,13 @@ QString MicroserviceData::readApplicationShortNameFromFile(const QString& filePa
 QVector<int> MicroserviceData::readPortsFromFile(const QString directory) const {
     QVector<int> ports;
 
-    QString path = directory + "/"+ name;
-    QString prefix = shortName;
-
     QStringList args;
-    args << path << prefix << QCoreApplication::applicationDirPath();
+    args << QDir(directory).filePath(name)
+         << shortName;
 
     QProcess process;
-    process.start(QCoreApplication::applicationDirPath() + "/" + "ports.sh", args);
+    QString scriptPath = QDir(QCoreApplication::applicationDirPath()).filePath("ports.sh");
+    process.start(scriptPath, args);
     if (!process.waitForStarted() || !process.waitForFinished()) {
         qWarning() << "Failed to execute script:" << process.errorString();
         return ports;
@@ -64,19 +65,20 @@ QVector<int> MicroserviceData::readPortsFromFile(const QString directory) const 
         if (ok) ports.append(port);
     }
 
+    if (ports.isEmpty()) {
+        qDebug() << output;
+    }
+
     return ports;
 }
 
 QString MicroserviceData::getFolderInfo() const {
-    QString portText;
-    for (int i = 0; i < ports.size(); i++) {
-        portText += QString::number(ports[i]);
-
-        // Add "/" separator if it's not the last port
-        if (i < ports.size() - 1) {
-            portText += " / ";
-        }
+    QStringList portStrings;
+    for (const auto &port : ports) {
+        portStrings << QString::number(port);
     }
+
+    QString portText = portStrings.join(" / ");
 
     QString folderInfo;
     if (!shortName.isEmpty()) {
@@ -154,12 +156,7 @@ bool MicroserviceData::checkDebug() const {
 }
 
 bool MicroserviceData::isServiceRunning() const {
-    int pid = getPid();
-    if (pid != -1) {
-        return true;
-    }
-
-    return false;
+    return getPid() == -1 ? false : true;
 }
 
 void MicroserviceData::refreshCheckboxState() {
@@ -262,4 +259,30 @@ void MicroserviceData::updateFlagState(const QString flag, const Qt::CheckState 
             checkBox->setCheckState(state);
         }
     }
+}
+
+QString MicroserviceData::getPIDByPorts() const {
+    QVector<int> ports = getPorts();
+    if (ports.isEmpty()) {
+        qDebug() << "No ports found for folder" << name;
+        return "";
+    }
+
+    for (int port : ports) {
+        QString cmd = "lsof -i :" + QString::number(port) + " -t";
+        QProcess process;
+
+        process.start("/usr/bin/env", QStringList() << "bash" << "-c" << cmd);
+        process.waitForFinished();
+
+        QString result = process.readAllStandardOutput().trimmed();
+        if (!result.isEmpty()) {
+            qDebug() << "Found PID for port" << port << ":" << result;
+            return result;
+        } else {
+            qDebug() << "No PID found for port" << port;
+        }
+    }
+
+    return ""; // Return empty if no process is found on any port
 }
