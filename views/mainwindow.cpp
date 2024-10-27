@@ -156,16 +156,6 @@ void MainWindow::onAddCommandClicked() {
     commandLayout->addWidget(commandLineEdit);
     layout->addLayout(commandLayout);
 
-    QHBoxLayout *delayLayout = new QHBoxLayout;
-    QLabel *delayLabel = new QLabel("Enter the delay for the command (Optional):", &dialog);
-    QLineEdit *delayLineEdit = new QLineEdit(&dialog);
-    QDoubleValidator *validator = new QDoubleValidator(0.0, 999999.0, 2, delayLineEdit);
-    delayLineEdit->setValidator(validator);
-    delayLineEdit->setPlaceholderText("5,0");
-    delayLayout->addWidget(delayLabel);
-    delayLayout->addWidget(delayLineEdit);
-    layout->addLayout(delayLayout);
-
     QHBoxLayout *argumentLayout = new QHBoxLayout;
     QLabel *argumentLabel = new QLabel("Enter arguments separated by comma (Optional):", &dialog);
     QLineEdit *argumentLineEdit = new QLineEdit(&dialog);
@@ -203,7 +193,6 @@ void MainWindow::onAddCommandClicked() {
     QString newCommandName = nameLineEdit->text();
     QString scriptName = scriptLineEdit->text();
     QString command = commandLineEdit->text();
-    QString delay = delayLineEdit->text();
     QStringList arguments = argumentLineEdit->text().split(',', Qt::SkipEmptyParts);
     bool executeForSelectedEnabled = executeForSelectedCheckBox->isChecked();
     bool disableSelectedServicesEnabled = disableSelectedServicesCheckBox->isChecked();
@@ -218,10 +207,6 @@ void MainWindow::onAddCommandClicked() {
     settings.beginGroup("Command_"+newCommandName);
     settings.setValue("scriptName", scriptName);
     settings.setValue("executeForSelected", executeForSelectedEnabled);
-
-    if (!delay.isEmpty()){
-        settings.setValue("delay", delay);
-    }
 
     if (!command.isEmpty()) {
         settings.setValue("command", command);
@@ -245,7 +230,7 @@ void MainWindow::onAddCommandClicked() {
         }
     }
 
-    controller->addCommand(newCommandName, command, arguments, delay.toFloat(), checkedServicesNames, 0, executeForSelectedEnabled, scriptName);
+    controller->addCommand(newCommandName, command, arguments, checkedServicesNames, 0, executeForSelectedEnabled, scriptName);
 
     commandMenu->clear();
     loadCommandsFromConfigFile();

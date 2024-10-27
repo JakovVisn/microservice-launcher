@@ -21,7 +21,6 @@ void Controller::loadCommandsFromConfig() {
 
             QString name = group.mid(QString("Command_").length());
             QString command = settings.value("command").toString();
-            float delay = settings.value("delay").toFloat();
             int buttonSize = settings.value("buttonSize").toInt();
             bool executeForSelected = settings.value("executeForSelected").toBool();;
             QString scriptName = settings.value("scriptName").toString();
@@ -36,7 +35,7 @@ void Controller::loadCommandsFromConfig() {
                 args = settings.value("args").toStringList();
             }
 
-            addCommand(name, command, args, delay, excludedServices, buttonSize, executeForSelected, scriptName);
+            addCommand(name, command, args, excludedServices, buttonSize, executeForSelected, scriptName);
 
             settings.endGroup();
         }
@@ -87,7 +86,6 @@ void Controller::executeScript(const QString &commandName, const QStringList &ad
     QProcess process;
     QStringList args;
     args << commands.value(commandName)->getCommand()
-         << QString::number(commands.value(commandName)->getDelay())
          << model->getDirectory()
          << additionalArgs;
 
@@ -157,8 +155,8 @@ QMap<QString, Command*> Controller::getCommands() const {
     return commands;
 }
 
-void Controller::addCommand(const QString &name, const QString &command, const QStringList &args, const float delay, const QStringList &excludedServices, const int buttonSize, const bool executeForSelected, const QString &scriptName) {
-    Command *cmd = new Command(name, command, args, delay, excludedServices, buttonSize, executeForSelected, scriptName);
+void Controller::addCommand(const QString &name, const QString &command, const QStringList &args, const QStringList &excludedServices, const int buttonSize, const bool executeForSelected, const QString &scriptName) {
+    Command *cmd = new Command(name, command, args, excludedServices, buttonSize, executeForSelected, scriptName);
     commands.insert(name, cmd);
 }
 

@@ -1,10 +1,9 @@
 #include "command.h"
 
-Command::Command(const QString &name, const QString &command, const QStringList &args, const float delay, const QStringList &excludedServices, const int buttonSize, const bool executeForSelected, const QString &scriptName)
+Command::Command(const QString &name, const QString &command, const QStringList &args, const QStringList &excludedServices, const int buttonSize, const bool executeForSelected, const QString &scriptName)
     : name(name)
     , command(command)
     , args(args)
-    , delay (delay)
     , excludedServices(excludedServices)
     , buttonSize(buttonSize)
     , executeForSelected(executeForSelected)
@@ -17,10 +16,6 @@ QString Command::getName() const {
 
 QString Command::getCommand() const {
     return command;
-}
-
-float Command::getDelay() const {
-    return delay;
 }
 
 int Command::getButtonSize() const {
