@@ -303,16 +303,6 @@ void MainWindow::onAddSaveClicked() {
     settings.setValue(newSaveName, checkedServicesNames);
     settings.endGroup();
 
-    settings.beginGroup("Save");
-    QStringList actions;
-    if (settings.contains("services")) {
-        actions = settings.value("services").toStringList();
-    }
-
-    actions.append(newSaveName);
-    settings.setValue("services", actions);
-    settings.endGroup();
-
     saveMenu->clear();
     loadSavesFromConfigFile();
 }
@@ -411,13 +401,9 @@ void MainWindow::loadSettings() {
 
 void MainWindow::loadSavesFromConfigFile() {
     QSettings settings(model->getConfigFile(), QSettings::IniFormat);
-    settings.beginGroup("Save");
+    settings.beginGroup("Action");
 
-    QStringList actionNames;
-    if (settings.contains("services")) {
-        actionNames = settings.value("services").toStringList();
-    }
-
+    QStringList actionNames = settings.childKeys();
     for (const QString& actionName : actionNames) {
         QAction *action = new QAction(actionName, this);
 
