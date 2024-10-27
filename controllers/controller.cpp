@@ -87,7 +87,6 @@ void Controller::executeScript(const QString &commandName, const QStringList &ad
     QProcess process;
     QStringList args;
     args << commands.value(commandName)->getCommand()
-         << QString::number(model->getNewTabDelay())
          << QString::number(commands.value(commandName)->getDelay())
          << model->getDirectory()
          << additionalArgs;

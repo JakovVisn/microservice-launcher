@@ -12,8 +12,6 @@ public:
     MicroserviceDataMap getMicroservices() const;
     QString getDirectory() const;
     QString getSaveFile() const;
-    float getNewTabDelayFromConfigFile() const;
-    float getNewTabDelay() const;
     QStringList getFlagNames() const;
     void addFlagName(const QString& flagName);
 
@@ -30,8 +28,6 @@ private:
     const QString directory;
 
     MicroserviceDataMap microservices;
-
-    const float newTabDelay;
 
     QStringList flagNames;
 };

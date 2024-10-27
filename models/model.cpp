@@ -12,7 +12,6 @@ Model::Model()
     , defaultSaveFile(createEmptyFile("/save.ini"))
     , directory(findDirectory())
     , microservices(getFolderNames(), directory)
-    , newTabDelay(getNewTabDelayFromConfigFile())
     , flagNames(loadFlagNames())
 {}
 
@@ -115,19 +114,6 @@ MicroserviceDataMap Model::getMicroservices() const {
 
 QString Model::getSaveFile() const {
     return defaultSaveFile;
-}
-
-float Model::getNewTabDelayFromConfigFile() const {
-    QSettings settings(getConfigFile(), QSettings::IniFormat);
-    settings.beginGroup("Main");
-    float newTabDelay = settings.value("newTab", 0).toFloat();
-    settings.endGroup();
-
-    return newTabDelay;
-}
-
-float Model::getNewTabDelay() const {
-    return newTabDelay;
 }
 
 QStringList Model::loadFlagNames() {
