@@ -13,10 +13,12 @@ public:
     QString getDirectory() const;
     QString getSaveFile() const;
     QStringList getFlagNames() const;
+    QString getDefaultButtonStyle() const;
     void addFlagName(const QString& flagName);
 
 private:
     QString readDirectory() const;
+    QString readDefaultButtonStyle() const;
     QStringList readExcludedFoldersFromConfig() const;
     QString createEmptyFile(const QString fileName) const;
     QString findDirectory() const;
@@ -26,6 +28,7 @@ private:
     const QString defaultConfigFile;
     const QString defaultSaveFile;
     const QString directory;
+    const QString defaultButtonStyle;
 
     MicroserviceDataMap microservices;
 

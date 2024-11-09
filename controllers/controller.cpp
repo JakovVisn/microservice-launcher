@@ -131,7 +131,8 @@ QString Controller::getCommandButtonStyle(const QString &commandName) const{
         exit(EXIT_FAILURE);
     }
 
-    return commands.value(commandName)->getButtonStyle();
+    QString buttonStyle = commands.value(commandName)->getButtonStyle();
+    return buttonStyle.isEmpty() ? model->getDefaultButtonStyle() : buttonStyle;
 }
 
 QStringList Controller::getCommandExcludedServices(const QString &commandName) const{

@@ -11,6 +11,7 @@ Model::Model()
     : defaultConfigFile(createEmptyFile("/config.ini"))
     , defaultSaveFile(createEmptyFile("/save.ini"))
     , directory(findDirectory())
+    , defaultButtonStyle(readDefaultButtonStyle())
     , microservices(getFolderNames(), directory)
     , flagNames(loadFlagNames())
 {}
@@ -35,6 +36,22 @@ QString Model::findDirectory() const {
 
     qDebug() << "initialDir: " << directory;
     return directory;
+}
+
+QString Model::readDefaultButtonStyle() const {
+    QSettings settings(defaultConfigFile, QSettings::IniFormat);
+
+    settings.beginGroup("Main");
+
+    if (!settings.contains("DefaultButtonStyle")) {
+        return "";
+    }
+
+    QString buttonStyle = settings.value("DefaultButtonStyle").toString();
+
+    settings.endGroup();
+
+    return buttonStyle;
 }
 
 QStringList Model::getFolderNames() const {
@@ -132,6 +149,10 @@ QStringList Model::loadFlagNames() {
 
 QStringList Model::getFlagNames() const {
     return flagNames;
+}
+
+QString Model::getDefaultButtonStyle() const {
+    return defaultButtonStyle;
 }
 
 void Model::addFlagName(const QString& flagName) {
