@@ -230,7 +230,7 @@ void MainWindow::onAddCommandClicked() {
         }
     }
 
-    controller->addCommand(newCommandName, command, arguments, checkedServicesNames, 0, executeForSelectedEnabled, scriptName);
+    controller->addCommand(newCommandName, command, arguments, checkedServicesNames, 0, "", executeForSelectedEnabled, scriptName);
 
     commandMenu->clear();
     loadCommandsFromConfigFile();
@@ -440,6 +440,11 @@ void MainWindow::loadMainWindowButtonsFromConfigFile() {
             int size = controller->getCommandButtonSize(commandName);
             if (size != 0) {
                 pushButton->setFixedWidth(size);
+            }
+
+            QString style = controller->getCommandButtonStyle(commandName);
+            if (!style.isEmpty()) {
+                pushButton->setStyleSheet(style);
             }
 
             if (commandName == "Select All") {

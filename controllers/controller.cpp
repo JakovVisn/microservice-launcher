@@ -22,6 +22,7 @@ void Controller::loadCommandsFromConfig() {
             QString name = group.mid(QString("Command_").length());
             QString command = settings.value("command").toString();
             int buttonSize = settings.value("buttonSize").toInt();
+            QString buttonStyle = settings.value("buttonStyle").toString();
             bool executeForSelected = settings.value("executeForSelected").toBool();;
             QString scriptName = settings.value("scriptName").toString();
 
@@ -35,7 +36,7 @@ void Controller::loadCommandsFromConfig() {
                 args = settings.value("args").toStringList();
             }
 
-            addCommand(name, command, args, excludedServices, buttonSize, executeForSelected, scriptName);
+            addCommand(name, command, args, excludedServices, buttonSize, buttonStyle, executeForSelected, scriptName);
 
             settings.endGroup();
         }
@@ -124,6 +125,15 @@ int Controller::getCommandButtonSize(const QString &commandName) const{
     return commands.value(commandName)->getButtonSize();
 }
 
+QString Controller::getCommandButtonStyle(const QString &commandName) const{
+    if (!commands.contains(commandName)) {
+        QMessageBox::critical(nullptr, "Error", "Command not found: " + commandName);
+        exit(EXIT_FAILURE);
+    }
+
+    return commands.value(commandName)->getButtonStyle();
+}
+
 QStringList Controller::getCommandExcludedServices(const QString &commandName) const{
     if (!commands.contains(commandName)) {
         QMessageBox::critical(nullptr, "Error", "Command not found: " + commandName);
@@ -155,8 +165,16 @@ QMap<QString, Command*> Controller::getCommands() const {
     return commands;
 }
 
-void Controller::addCommand(const QString &name, const QString &command, const QStringList &args, const QStringList &excludedServices, const int buttonSize, const bool executeForSelected, const QString &scriptName) {
-    Command *cmd = new Command(name, command, args, excludedServices, buttonSize, executeForSelected, scriptName);
+void Controller::addCommand(const QString &name, const QString &command, const QStringList &args, const QStringList &excludedServices, const int buttonSize, const QString buttonStyle, const bool executeForSelected, const QString &scriptName) {
+    Command *cmd = new Command(
+        name,
+        command,
+        args,
+        excludedServices,
+        buttonSize,
+        buttonStyle,
+        executeForSelected,
+        scriptName);
     commands.insert(name, cmd);
 }
 

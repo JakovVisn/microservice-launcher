@@ -16,11 +16,20 @@ public:
     void selectDetermined(const QString &saveName);
     void executeScript(const QString &commandName, const QStringList &additionalArgs = QStringList());
     int getCommandButtonSize(const QString &commandName) const;
+    QString getCommandButtonStyle(const QString &commandName) const;
     bool getCommandExecuteForSelected(const QString &commandName) const;
     QStringList getCommandExcludedServices(const QString &commandName) const;
     QStringList getCommandArgs(const QString &commandName) const;
     QMap<QString, Command*> getCommands() const;
-    void addCommand(const QString &name, const QString &command, const QStringList &args, const QStringList &excludedServices, const int buttonSize, const bool executeForSelected, const QString &scriptName);
+    void addCommand(
+        const QString &name,
+        const QString &command,
+        const QStringList &args,
+        const QStringList &excludedServices,
+        const int buttonSize,
+        const QString buttonStyle,
+        const bool executeForSelected,
+        const QString &scriptName);
     void addFlag(const QString &flag, bool visible);
     void updateFlagStateForAllServices(const QString &flag, Qt::CheckState);
 

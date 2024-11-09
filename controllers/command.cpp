@@ -1,11 +1,20 @@
 #include "command.h"
 
-Command::Command(const QString &name, const QString &command, const QStringList &args, const QStringList &excludedServices, const int buttonSize, const bool executeForSelected, const QString &scriptName)
+Command::Command(
+    const QString &name,
+    const QString &command,
+    const QStringList &args,
+    const QStringList &excludedServices,
+    const int buttonSize,
+    const QString buttonStyle,
+    const bool executeForSelected,
+    const QString &scriptName)
     : name(name)
     , command(command)
     , args(args)
     , excludedServices(excludedServices)
     , buttonSize(buttonSize)
+    , buttonStyle(buttonStyle)
     , executeForSelected(executeForSelected)
     , scriptName(scriptName)
 {}
@@ -20,6 +29,10 @@ QString Command::getCommand() const {
 
 int Command::getButtonSize() const {
     return buttonSize;
+}
+
+QString Command::getButtonStyle() const {
+    return buttonStyle;
 }
 
 QString Command::getScriptName() const {
