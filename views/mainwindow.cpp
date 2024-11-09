@@ -84,7 +84,7 @@ MainWindow::MainWindow(QWidget *parent)
         settings.beginGroup("Flag_"+iter.key());
         foreach (QString flag, model->getFlagNames()) {
             bool isChecked = settings.value(flag, false).toBool();
-            iter.value()->addFlag(flag, enableFlagsCheckBox->isChecked(), saveCheckBox->isChecked() ? isChecked : false);
+            iter.value()->addFlag(flag, showFlagControlPanelCheckBox->isChecked(), saveCheckBox->isChecked() ? isChecked : false);
         }
 
         settings.endGroup();
@@ -324,10 +324,10 @@ void MainWindow::loadSettings() {
 
     settings.beginGroup("SettingsState");
     bool isSaveChecked = settings.value("save", false).toBool();
-    bool isEnableFlagsChecked = false;
+    bool showFlagControlPanel = false;
 
     if (isSaveChecked) {
-        isEnableFlagsChecked = settings.value("enableFlags", false).toBool();
+        showFlagControlPanel = settings.value("showFlagControlPanel", false).toBool();
     }
 
     QStringList flags;
@@ -344,18 +344,18 @@ void MainWindow::loadSettings() {
 
     QMenu *flagsSubMenu = new QMenu("Flags", this);
 
-    enableFlagsCheckBox = new QAction("Enable Flags", this);
-    enableFlagsCheckBox->setCheckable(true);
-    enableFlagsCheckBox->setChecked(isEnableFlagsChecked);
-    connect(enableFlagsCheckBox, &QAction::toggled, this, &MainWindow::onEnableFlagsStateChanged);
-    flagsSubMenu->addAction(enableFlagsCheckBox);
+    showFlagControlPanelCheckBox = new QAction("Show Flag Control Panel", this);
+    showFlagControlPanelCheckBox->setCheckable(true);
+    showFlagControlPanelCheckBox->setChecked(showFlagControlPanel);
+    connect(showFlagControlPanelCheckBox, &QAction::toggled, this, &MainWindow::onFlagControlPanelStateChanged);
+    flagsSubMenu->addAction(showFlagControlPanelCheckBox);
 
     QAction *addFlagAction = new QAction("Add New Flag", this);
     connect(addFlagAction, &QAction::triggered, this, &MainWindow::onAddFlagClicked);
     flagsSubMenu->addAction(addFlagAction);
 
-    QMenu *applyFlagsToAllServicesSubMenu = new QMenu("Apply Flags to All Services", this);
-    QMenu *removeFlagsFromAllServicesSubMenu = new QMenu("Remove Flags from All Services", this);
+    applyFlagsToAllServicesSubMenu = new QMenu("Apply Flags to All Services", this);
+    removeFlagsFromAllServicesSubMenu = new QMenu("Remove Flags from All Services", this);
     for (const QString& flag : flags) {
         QAction *applyFlagAction = new QAction(flag, this);
         connect(applyFlagAction, &QAction::triggered, this, [this, flag]() {
@@ -581,7 +581,7 @@ void MainWindow::saveCheckBoxStateToFile() {
 
     settings.beginGroup("SettingsState");
     settings.setValue("save", saveCheckBox->isChecked());
-    settings.setValue("enableFlags", enableFlagsCheckBox->isChecked());
+    settings.setValue("showFlagControlPanel", showFlagControlPanelCheckBox->isChecked());
 
     settings.endGroup();
 
@@ -608,7 +608,7 @@ void MainWindow::saveFlagsStateToFile() {
     }
 }
 
-void MainWindow::onEnableFlagsStateChanged(bool enabled) {
+void MainWindow::onFlagControlPanelStateChanged(bool enabled) {
     QMap<QString, MicroserviceData*> microservicesMap = model->getMicroservices().getDataMap();
     QMap<QString, MicroserviceData*>::const_iterator iter;
     for (iter = microservicesMap.constBegin(); iter != microservicesMap.constEnd(); ++iter) {
@@ -652,7 +652,19 @@ void MainWindow::onAddFlagClicked() {
     QString newFlag = flagLineEdit->text();
 
     model->addFlagName(newFlag);
-    controller->addFlag(newFlag, enableFlagsCheckBox->isChecked());
+    controller->addFlag(newFlag, showFlagControlPanelCheckBox->isChecked());
+
+    QAction *applyFlagAction = new QAction(newFlag, this);
+    connect(applyFlagAction, &QAction::triggered, this, [this, newFlag]() {
+        onApplyFlagToAllServices(newFlag);
+    });
+    applyFlagsToAllServicesSubMenu->addAction(applyFlagAction);
+
+    QAction *removeFlagAction = new QAction(newFlag, this);
+    connect(removeFlagAction, &QAction::triggered, this, [this, newFlag]() {
+        onRemoveFlagFromAllServicesClicked(newFlag);
+    });
+    removeFlagsFromAllServicesSubMenu->addAction(removeFlagAction);
 }
 
 void MainWindow::onApplyFlagToAllServices(const QString &flag) {

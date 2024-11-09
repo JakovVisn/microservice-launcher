@@ -31,7 +31,7 @@ private slots:
     void onAddCommandClicked();
     void onAddSaveClicked();
     void onCustomButtonClicked(const QString &commandName);
-    void onEnableFlagsStateChanged(bool enabled);
+    void onFlagControlPanelStateChanged(bool enabled);
     void onAddFlagClicked();
     void onApplyFlagToAllServices(const QString &flag);
     void onRemoveFlagFromAllServicesClicked(const QString &flag);
@@ -55,12 +55,14 @@ private:
     QLineEdit *searchLineEdit;
 
     QAction *saveCheckBox;
-    QAction *enableFlagsCheckBox;
+    QAction *showFlagControlPanelCheckBox;
     QVBoxLayout *mainLayout;
     QMenuBar *menuBar;
     QMenu *saveMenu;
     QMenu *commandMenu;
     QMenu *settingsMenu;
+    QMenu *applyFlagsToAllServicesSubMenu;
+    QMenu *removeFlagsFromAllServicesSubMenu;
     QLabel *servicesStatusLabel;
 
     int width;
