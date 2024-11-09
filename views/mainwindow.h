@@ -25,7 +25,7 @@ private slots:
     void onSelectAllButtonClicked();
     void onDeselectAllButtonClicked();
     void onRefreshButtonClicked();
-    void onSaveActionClicked(const QString &actionName);
+    void onSaveActionClicked(const QString &saveName);
     void onSearchLineEditTextChanged();
     void onSearchLineEditEditingFinished();
     void onAddCommandClicked();

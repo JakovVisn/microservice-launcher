@@ -284,7 +284,7 @@ void MainWindow::onAddSaveClicked() {
     }
 
     QSettings settings(model->getConfigFile(), QSettings::IniFormat);
-    settings.beginGroup("Action");
+    settings.beginGroup("Save");
     settings.setValue(newSaveName, checkedServicesNames);
     settings.endGroup();
 
@@ -386,17 +386,17 @@ void MainWindow::loadSettings() {
 
 void MainWindow::loadSavesFromConfigFile() {
     QSettings settings(model->getConfigFile(), QSettings::IniFormat);
-    settings.beginGroup("Action");
+    settings.beginGroup("Save");
 
-    QStringList actionNames = settings.childKeys();
-    for (const QString& actionName : actionNames) {
-        QAction *action = new QAction(actionName, this);
+    QStringList saveNames = settings.childKeys();
+    for (const QString& saveName : saveNames) {
+        QAction *save = new QAction(saveName, this);
 
-        connect(action, &QAction::triggered, this, [this, actionName]() {
-            onSaveActionClicked(actionName);
+        connect(save, &QAction::triggered, this, [this, saveName]() {
+            onSaveActionClicked(saveName);
         });
 
-        saveMenu->addAction(action);
+        saveMenu->addAction(save);
     }
 
     settings.endGroup();
@@ -540,8 +540,8 @@ void MainWindow::executeForSelectedMicroservices(const QString &commandName, con
     }
 }
 
-void MainWindow::onSaveActionClicked(const QString &actionName) {
-    controller->selectDetermined(actionName);
+void MainWindow::onSaveActionClicked(const QString &saveName) {
+    controller->selectDetermined(saveName);
 }
 
 void MainWindow::onSearchLineEditTextChanged() {

@@ -13,7 +13,7 @@ public:
     void selectAll();
     void deselectAll();
     void refresh();
-    void selectDetermined(const QString &actionName);
+    void selectDetermined(const QString &saveName);
     void executeScript(const QString &commandName, const QStringList &additionalArgs = QStringList());
     int getCommandButtonSize(const QString &commandName) const;
     bool getCommandExecuteForSelected(const QString &commandName) const;

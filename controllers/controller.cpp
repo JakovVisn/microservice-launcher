@@ -66,10 +66,10 @@ void Controller::deselectAll() {
     }
 };
 
-void Controller::selectDetermined(const QString &actionName) {
+void Controller::selectDetermined(const QString &saveName) {
     QSettings settings(model->getConfigFile(), QSettings::IniFormat);
-    settings.beginGroup("Action");
-    QStringList checkboxNames = settings.value(actionName).toStringList();
+    settings.beginGroup("Save");
+    QStringList checkboxNames = settings.value(saveName).toStringList();
     settings.endGroup();
 
     MicroserviceDataMap microservices = model->getMicroservices();
