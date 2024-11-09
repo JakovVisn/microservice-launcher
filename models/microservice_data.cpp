@@ -36,8 +36,13 @@ QString MicroserviceData::readApplicationShortNameFromFile(const QString& filePa
         return QString();
     }
 
-    QString output = process.readAllStandardOutput();
-    return output.trimmed();
+    if (process.exitCode() != 0) {
+        qWarning() << "Process failed with exit code:" << process.exitCode() << "Error:" << process.readAllStandardOutput();
+        return QString();
+    }
+
+    QString output = process.readAllStandardOutput().trimmed();
+    return output;
 }
 
 QVector<int> MicroserviceData::readPortsFromFile(const QString directory) const {
@@ -55,6 +60,11 @@ QVector<int> MicroserviceData::readPortsFromFile(const QString directory) const 
         return ports;
     }
 
+    if (process.exitCode() != 0) {
+        qWarning() << "Process failed with exit code:" << process.exitCode() << "Error:" << process.readAllStandardOutput();
+        return ports;
+    }
+
     QString output = process.readAllStandardOutput().trimmed();
 
     QStringList parts = output.split(" ");
@@ -63,10 +73,6 @@ QVector<int> MicroserviceData::readPortsFromFile(const QString directory) const 
         bool ok;
         int port = part.toInt(&ok);
         if (ok) ports.append(port);
-    }
-
-    if (ports.isEmpty()) {
-        qDebug() << output;
     }
 
     return ports;
