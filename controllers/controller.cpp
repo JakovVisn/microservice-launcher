@@ -72,6 +72,7 @@ void Controller::selectDetermined(const QString &saveName) {
     QStringList checkboxNames = settings.value(saveName).toStringList();
     settings.endGroup();
 
+    deselectAll();
     MicroserviceDataMap microservices = model->getMicroservices();
     for (const QString &checkboxName : checkboxNames) {
         if (microservices.contains(checkboxName)) {
