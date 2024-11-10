@@ -5,7 +5,6 @@ Command::Command(
     const QString &command,
     const QStringList &args,
     const QStringList &excludedServices,
-    const int buttonSize,
     const QString buttonStyle,
     const bool executeForSelected,
     const QString &scriptName)
@@ -13,7 +12,6 @@ Command::Command(
     , command(command)
     , args(args)
     , excludedServices(excludedServices)
-    , buttonSize(buttonSize)
     , buttonStyle(buttonStyle)
     , executeForSelected(executeForSelected)
     , scriptName(scriptName)
@@ -25,10 +23,6 @@ QString Command::getName() const {
 
 QString Command::getCommand() const {
     return command;
-}
-
-int Command::getButtonSize() const {
-    return buttonSize;
 }
 
 QString Command::getButtonStyle() const {

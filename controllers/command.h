@@ -10,13 +10,11 @@ public:
         const QString &command,
         const QStringList &args,
         const QStringList &excludedServices,
-        const int buttonSize,
         const QString buttonStyle,
         const bool executeForSelected,
         const QString &scriptName);
     QString getName() const;
     QString getCommand() const;
-    int getButtonSize() const;
     QString getButtonStyle() const;
     QString getScriptName() const;
     QStringList getExcludedServices() const;
@@ -28,7 +26,6 @@ private:
     QString command;
     QStringList args;
     QStringList excludedServices;
-    int buttonSize;
     QString buttonStyle;
     bool executeForSelected;
     QString scriptName;

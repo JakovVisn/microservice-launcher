@@ -230,7 +230,7 @@ void MainWindow::onAddCommandClicked() {
         }
     }
 
-    controller->addCommand(newCommandName, command, arguments, checkedServicesNames, 0, "", executeForSelectedEnabled, scriptName);
+    controller->addCommand(newCommandName, command, arguments, checkedServicesNames, "", executeForSelectedEnabled, scriptName);
 
     commandMenu->clear();
     loadCommandsFromConfigFile();
@@ -436,11 +436,6 @@ void MainWindow::loadMainWindowButtonsFromConfigFile() {
         groupLayout->setAlignment(Qt::AlignLeft);
         for (const QString& commandName : commandNames) {
             QPushButton *pushButton = new QPushButton(commandName, this);
-
-            int size = controller->getCommandButtonSize(commandName);
-            if (size != 0) {
-                pushButton->setFixedWidth(size);
-            }
 
             QString style = controller->getCommandButtonStyle(commandName);
             if (!style.isEmpty()) {
