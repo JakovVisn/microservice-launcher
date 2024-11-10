@@ -21,6 +21,7 @@ public:
     QCheckBox* getCheckBox();
     QCheckBox* getStatusCheckBox();
     QHBoxLayout* getFlagsLayout() const;
+    QVBoxLayout* getMicroserviceLayout() const;
     void addFlag(const QString flag, bool visible, bool check = false);
     void setFlagsVisible(bool visible);
     QStringList getEnabledFlags() const;
@@ -48,6 +49,7 @@ private:
     const QVector<int> ports;
     QVector<QCheckBox*> flagCheckBoxes;
     QHBoxLayout *flagsLayout;
+    QVBoxLayout *microserviceLayout;
     QLabel *enabledFlagsLabel;
 };
 

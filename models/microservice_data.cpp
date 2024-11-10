@@ -10,6 +10,7 @@ MicroserviceData::MicroserviceData(const QString name, const QString directory)
     , shortName(readApplicationShortNameFromFile(QDir(directory).filePath(name)))
     , ports(readPortsFromFile(directory))
     , flagsLayout(new QHBoxLayout)
+    , microserviceLayout(new QVBoxLayout)
 {
     flagsLayout->setAlignment(Qt::AlignLeft);
     flagsLayout->setSpacing(10);
@@ -218,6 +219,10 @@ QHBoxLayout* MicroserviceData::getFlagsLayout() const {
     return flagsLayout;
 }
 
+QVBoxLayout* MicroserviceData::getMicroserviceLayout() const {
+    return microserviceLayout;
+}
+
 void MicroserviceData::addFlag(const QString flag, bool visible, bool check) {
     QCheckBox *flagCheckBox = new QCheckBox(flag);
     flagCheckBox->setChecked(check);
@@ -250,6 +255,11 @@ QVector<QCheckBox*> MicroserviceData::getFlagCheckBoxes() const {
 }
 
 void MicroserviceData::updateEnabledFlagsLabel() {
+    if (microserviceLayout->parent() == nullptr) {
+        enabledFlagsLabel->clear();
+        return;
+    }
+
     QStringList enabledFlags = getEnabledFlags();
     QString enabledFlagsText = enabledFlags.join(", ");
     enabledFlagsLabel->setText(enabledFlagsText);

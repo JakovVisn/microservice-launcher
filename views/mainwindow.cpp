@@ -8,6 +8,7 @@
 #include <QMessageBox>
 #include <QDoubleValidator>
 #include <QLabel>
+#include <QKeyEvent>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -16,7 +17,7 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    setWindowTitle("Microservice Launcher (V2.0.3)");
+    setWindowTitle("Microservice Launcher (V2.1.0)");
     statusBar()->addPermanentWidget(servicesStatusLabel);
 
     model = new Model();
@@ -43,13 +44,14 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(searchLineEdit, &QLineEdit::textChanged, this, &MainWindow::onSearchLineEditTextChanged);
     connect(searchLineEdit, &QLineEdit::editingFinished, this, &MainWindow::onSearchLineEditEditingFinished);
+    searchLineEdit->installEventFilter(this);
 
     connect(qApp, &QApplication::aboutToQuit, this, &MainWindow::saveCheckBoxStateToFile);
 
     mainLayout = new QVBoxLayout(ui->centralwidget);
     mainLayout->setSpacing(0);
 
-    QVBoxLayout *contentLayout = new QVBoxLayout;
+    contentLayout = new QVBoxLayout;
     contentLayout->setAlignment(Qt::AlignTop);
     contentLayout->setSpacing(0);
 
@@ -96,15 +98,16 @@ MainWindow::MainWindow(QWidget *parent)
         rowLayout->addWidget(iter.value()->getCheckBox());
         rowLayout->addWidget(iter.value()->getEnabledFlagsLabel());
 
-        QVBoxLayout *microserviceLayout = new QVBoxLayout;
-        microserviceLayout->addLayout(rowLayout);
-        contentLayout->addLayout(microserviceLayout);
+        iter.value()->getCheckBox()->installEventFilter(this);
+
+        iter.value()->getMicroserviceLayout()->addLayout(rowLayout);
+        contentLayout->addLayout(iter.value()->getMicroserviceLayout());
 
         QHBoxLayout *flagsLayoutWithIndent = new QHBoxLayout;
         flagsLayoutWithIndent->addSpacing(35);
         flagsLayoutWithIndent->addLayout(iter.value()->getFlagsLayout());
 
-        microserviceLayout->addLayout(flagsLayoutWithIndent);
+        iter.value()->getMicroserviceLayout()->addLayout(flagsLayoutWithIndent);
 
         iter.value()->refreshCheckboxState();
         iter.value()->updateEnabledFlagsLabel();
@@ -547,22 +550,111 @@ void MainWindow::onSaveActionClicked(const QString &saveName) {
 void MainWindow::onSearchLineEditTextChanged() {
     QString searchText = searchLineEdit->text();
     QMap<QString, MicroserviceData*> microservicesMap = model->getMicroservices().getDataMap();
-    QMap<QString, MicroserviceData*>::const_iterator iter;
-    for (iter = microservicesMap.constBegin(); iter != microservicesMap.constEnd(); ++iter) {
+    for (auto iter = microservicesMap.constBegin(); iter != microservicesMap.constEnd(); ++iter) {
         QCheckBox* checkBox = iter.value()->getCheckBox();
-        if (searchText.isEmpty()) {
-            checkBox->setStyleSheet("");
-        } else if (checkBox->text().contains(searchText, Qt::CaseInsensitive)) {
-            checkBox->setStyleSheet("color: red;");
-        } else {
-            checkBox->setStyleSheet("");
+        QCheckBox* statusCheckBox = iter.value()->getStatusCheckBox();
+        bool matchesSearch = searchText.isEmpty() || checkBox->text().contains(searchText, Qt::CaseInsensitive);
+        checkBox->setVisible(matchesSearch);
+        statusCheckBox->setVisible(matchesSearch);
+
+        if (showFlagControlPanelCheckBox->isChecked()) {
+            iter.value()->setFlagsVisible(matchesSearch);
         }
+
+        contentLayout->removeItem(iter.value()->getMicroserviceLayout());
+        if (matchesSearch) {
+            contentLayout->addLayout(iter.value()->getMicroserviceLayout());
+        }
+
+        iter.value()->updateEnabledFlagsLabel();
     }
 }
 
 void MainWindow::onSearchLineEditEditingFinished() {
-    searchLineEdit->clear();
-    onSearchLineEditTextChanged();
+    QList<QCheckBox*> visibleCheckBoxes;
+    QMap<QString, MicroserviceData*> microservicesMap = model->getMicroservices().getDataMap();
+    for (auto iter = microservicesMap.constBegin(); iter != microservicesMap.constEnd(); ++iter) {
+        QCheckBox* checkBox = iter.value()->getCheckBox();
+        if (checkBox->isVisible()) {
+            visibleCheckBoxes.append(checkBox);
+        }
+    }
+}
+
+bool MainWindow::eventFilter(QObject* obj, QEvent* event) {
+    if (event->type() == QEvent::MouseButtonPress) {
+        QWidget* clickedWidget = qobject_cast<QWidget*>(obj);
+        QCheckBox* clickedCheckBox = qobject_cast<QCheckBox*>(clickedWidget);
+
+        if (clickedCheckBox) {
+            clickedCheckBox->setChecked(!clickedCheckBox->isChecked());
+            clickedCheckBox->clearFocus();
+            searchLineEdit->clear();
+            onSearchLineEditTextChanged();
+            return true;
+        }
+    }
+
+    if (event->type() == QEvent::KeyPress) {
+        QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
+
+        if (keyEvent->key() == Qt::Key_Return || keyEvent->key() == Qt::Key_Enter) {
+            QWidget* currentFocus = focusWidget();
+            QCheckBox* focusedCheckBox = qobject_cast<QCheckBox*>(currentFocus);
+
+            if (focusedCheckBox) {
+                focusedCheckBox->setChecked(!focusedCheckBox->isChecked());
+                searchLineEdit->clear();
+                onSearchLineEditTextChanged();
+                searchLineEdit->setFocus();
+                return true;
+            }
+
+            QCheckBox* firstVisibleCheckBox = nullptr;
+            QMap<QString, MicroserviceData*> microservicesMap = model->getMicroservices().getDataMap();
+            for (auto iter = microservicesMap.constBegin(); iter != microservicesMap.constEnd(); ++iter) {
+                QCheckBox* checkBox = iter.value()->getCheckBox();
+                if (checkBox->isVisible()) {
+                    firstVisibleCheckBox = checkBox;
+                    break;
+                }
+            }
+
+            if (firstVisibleCheckBox && !searchLineEdit->text().isEmpty()) {
+                firstVisibleCheckBox->setChecked(!firstVisibleCheckBox->isChecked());
+                searchLineEdit->clear();
+                onSearchLineEditTextChanged();
+                searchLineEdit->setFocus();
+            }
+
+            return true;
+        } else if (keyEvent->key() == Qt::Key_Tab) {
+            QList<QCheckBox*> visibleCheckBoxes;
+            QMap<QString, MicroserviceData*> microservicesMap = model->getMicroservices().getDataMap();
+            for (auto iter = microservicesMap.constBegin(); iter != microservicesMap.constEnd(); ++iter) {
+                QCheckBox* checkBox = iter.value()->getCheckBox();
+                if (checkBox->isVisible()) {
+                    checkBox->setFocusPolicy(Qt::StrongFocus);
+                    visibleCheckBoxes.append(checkBox);
+                }
+            }
+
+            QWidget* currentFocus = focusWidget();
+            int index = visibleCheckBoxes.indexOf(qobject_cast<QCheckBox*>(currentFocus));
+
+            if (index != -1 && index < visibleCheckBoxes.size() - 1) {
+                visibleCheckBoxes.at(index + 1)->setFocus();
+            } else if (index == -1 && !visibleCheckBoxes.isEmpty()) {
+                visibleCheckBoxes.first()->setFocus();
+            } else if (index == visibleCheckBoxes.size() - 1) {
+                visibleCheckBoxes.first()->setFocus();
+            }
+
+            return true;
+        }
+    }
+
+    return QMainWindow::eventFilter(obj, event);
 }
 
 void MainWindow::saveCheckBoxStateToFile() {

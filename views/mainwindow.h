@@ -35,6 +35,7 @@ private slots:
     void onAddFlagClicked();
     void onApplyFlagToAllServices(const QString &flag);
     void onRemoveFlagFromAllServicesClicked(const QString &flag);
+    bool eventFilter(QObject *obj, QEvent *event);
 
 private:
     void readWindowSizeFromConfig();
@@ -53,6 +54,7 @@ private:
     Controller* controller;
 
     QLineEdit *searchLineEdit;
+    QVBoxLayout *contentLayout;
 
     QAction *saveCheckBox;
     QAction *showFlagControlPanelCheckBox;
