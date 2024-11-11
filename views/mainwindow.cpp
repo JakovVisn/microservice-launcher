@@ -595,6 +595,12 @@ bool MainWindow::eventFilter(QObject* obj, QEvent* event) {
         }
     }
 
+    if (obj == searchLineEdit && event->type() == QEvent::FocusOut) {
+        searchLineEdit->clear();
+        onSearchLineEditTextChanged();
+        return true;
+    }
+
     if (event->type() == QEvent::KeyPress) {
         QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
 
