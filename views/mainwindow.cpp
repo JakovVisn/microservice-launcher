@@ -595,7 +595,9 @@ bool MainWindow::eventFilter(QObject* obj, QEvent* event) {
         }
     }
 
-    if (obj == searchLineEdit && event->type() == QEvent::FocusOut) {
+    QWidget* currentFocus = focusWidget();
+    QCheckBox* focusedCheckBox = qobject_cast<QCheckBox*>(currentFocus);
+    if (obj == searchLineEdit && event->type() == QEvent::FocusOut && !focusedCheckBox) {
         searchLineEdit->clear();
         onSearchLineEditTextChanged();
         return true;
