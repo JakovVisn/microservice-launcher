@@ -3,7 +3,6 @@
 #include "ui_mainwindow.h"
 
 #include <QtWidgets/qpushbutton.h>
-#include <QScrollArea>
 #include <QSettings>
 #include <QMessageBox>
 #include <QDoubleValidator>
@@ -58,7 +57,7 @@ MainWindow::MainWindow(QWidget *parent)
     QWidget *scrollContent = new QWidget;
     scrollContent->setLayout(contentLayout);
 
-    QScrollArea *scrollArea = new QScrollArea;
+    scrollArea = new QScrollArea;
     scrollArea->setWidgetResizable(true);
     scrollArea->setWidget(scrollContent);
 
@@ -583,37 +582,29 @@ void MainWindow::onSearchLineEditEditingFinished() {
 
 bool MainWindow::eventFilter(QObject* obj, QEvent* event) {
     if (event->type() == QEvent::MouseButtonPress) {
-        QWidget* clickedWidget = qobject_cast<QWidget*>(obj);
-        QCheckBox* clickedCheckBox = qobject_cast<QCheckBox*>(clickedWidget);
+        QCheckBox* clickedCheckBox = qobject_cast<QCheckBox*>(obj);
 
         if (clickedCheckBox) {
             clickedCheckBox->setChecked(!clickedCheckBox->isChecked());
             clickedCheckBox->clearFocus();
-            searchLineEdit->clear();
-            onSearchLineEditTextChanged();
             return true;
         }
     }
 
-    QWidget* currentFocus = focusWidget();
-    QCheckBox* focusedCheckBox = qobject_cast<QCheckBox*>(currentFocus);
-    if (obj == searchLineEdit && event->type() == QEvent::FocusOut && !focusedCheckBox) {
-        searchLineEdit->clear();
-        onSearchLineEditTextChanged();
-        return true;
-    }
-
     if (event->type() == QEvent::KeyPress) {
-        QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
+        int key = static_cast<QKeyEvent*>(event)->key();
 
-        if (keyEvent->key() == Qt::Key_Return || keyEvent->key() == Qt::Key_Enter) {
-            QWidget* currentFocus = focusWidget();
-            QCheckBox* focusedCheckBox = qobject_cast<QCheckBox*>(currentFocus);
+        if (key == Qt::Key_Escape) {
+            searchLineEdit->clear();
+            onSearchLineEditTextChanged();
+            return true;
+        }
+
+        if (key == Qt::Key_Return || key == Qt::Key_Enter) {
+            QCheckBox* focusedCheckBox = qobject_cast<QCheckBox*>(focusWidget());
 
             if (focusedCheckBox) {
                 focusedCheckBox->setChecked(!focusedCheckBox->isChecked());
-                searchLineEdit->clear();
-                onSearchLineEditTextChanged();
                 searchLineEdit->setFocus();
                 return true;
             }
@@ -630,35 +621,41 @@ bool MainWindow::eventFilter(QObject* obj, QEvent* event) {
 
             if (firstVisibleCheckBox && !searchLineEdit->text().isEmpty()) {
                 firstVisibleCheckBox->setChecked(!firstVisibleCheckBox->isChecked());
-                searchLineEdit->clear();
-                onSearchLineEditTextChanged();
                 searchLineEdit->setFocus();
             }
 
             return true;
-        } else if (keyEvent->key() == Qt::Key_Tab) {
-            QList<QCheckBox*> visibleCheckBoxes;
-            QMap<QString, MicroserviceData*> microservicesMap = model->getMicroservices().getDataMap();
-            for (auto iter = microservicesMap.constBegin(); iter != microservicesMap.constEnd(); ++iter) {
-                QCheckBox* checkBox = iter.value()->getCheckBox();
-                if (checkBox->isVisible()) {
-                    checkBox->setFocusPolicy(Qt::StrongFocus);
-                    visibleCheckBoxes.append(checkBox);
-                }
+        }
+
+        QList<QCheckBox*> visibleCheckBoxes;
+        QMap<QString, MicroserviceData*> microservicesMap = model->getMicroservices().getDataMap();
+        for (auto iter = microservicesMap.constBegin(); iter != microservicesMap.constEnd(); ++iter) {
+            QCheckBox* checkBox = iter.value()->getCheckBox();
+            if (checkBox->isVisible()) {
+                visibleCheckBoxes.append(checkBox);
             }
+        }
 
-            QWidget* currentFocus = focusWidget();
-            int index = visibleCheckBoxes.indexOf(qobject_cast<QCheckBox*>(currentFocus));
+        int index = visibleCheckBoxes.indexOf(focusWidget());
 
-            if (index != -1 && index < visibleCheckBoxes.size() - 1) {
-                visibleCheckBoxes.at(index + 1)->setFocus();
-            } else if (index == -1 && !visibleCheckBoxes.isEmpty()) {
+        if (key == Qt::Key_Tab) {
+            if ((index == -1 && !visibleCheckBoxes.isEmpty()) || searchLineEdit->hasFocus()) {
+                scrollArea->ensureWidgetVisible(visibleCheckBoxes.first());
                 visibleCheckBoxes.first()->setFocus();
+                return true;
             } else if (index == visibleCheckBoxes.size() - 1) {
-                visibleCheckBoxes.first()->setFocus();
+                searchLineEdit->setFocus();
+                return true;
             }
-
-            return true;
+        } else if (key == Qt::Key_Backtab) {
+            if (((index == -1 && !visibleCheckBoxes.isEmpty()) || searchLineEdit->hasFocus())) {
+                scrollArea->ensureWidgetVisible(visibleCheckBoxes.last());
+                visibleCheckBoxes.last()->setFocus();
+                return true;
+            } else if (index == 0) {
+                searchLineEdit->setFocus();
+                return true;
+            }
         }
     }
 

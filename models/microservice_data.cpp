@@ -17,6 +17,7 @@ MicroserviceData::MicroserviceData(const QString name, const QString directory)
 
     QString folderInfo = getFolderInfo();
     checkBox = new QCheckBox(name + folderInfo);
+    checkBox->setFocusPolicy(Qt::StrongFocus);
 
     statusCheckBox = new QCheckBox();
     statusCheckBox->setEnabled(false);

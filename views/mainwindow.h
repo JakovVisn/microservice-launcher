@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QVBoxLayout>
 #include <QLineEdit>
+#include <QScrollArea>
 
 #include "controllers/controller.h"
 
@@ -55,6 +56,7 @@ private:
 
     QLineEdit *searchLineEdit;
     QVBoxLayout *contentLayout;
+    QScrollArea *scrollArea;
 
     QAction *saveCheckBox;
     QAction *showFlagControlPanelCheckBox;
