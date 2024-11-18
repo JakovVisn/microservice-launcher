@@ -8,6 +8,7 @@
 #include <QDoubleValidator>
 #include <QLabel>
 #include <QKeyEvent>
+#include <QSystemTrayIcon>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -40,6 +41,12 @@ MainWindow::MainWindow(QWidget *parent)
     loadSavesFromConfigFile();
     loadCommandsFromConfigFile();
     loadSettings();
+
+    QSystemTrayIcon* trayIcon = new QSystemTrayIcon(this);
+    trayIcon->setContextMenu(commandMenu);
+    QIcon appIcon = QIcon::fromTheme(QIcon::ThemeIcon::WeatherSnow);
+    trayIcon->setIcon(appIcon);
+    trayIcon->show();
 
     connect(searchLineEdit, &QLineEdit::textChanged, this, &MainWindow::onSearchLineEditTextChanged);
     connect(searchLineEdit, &QLineEdit::editingFinished, this, &MainWindow::onSearchLineEditEditingFinished);
@@ -483,6 +490,7 @@ void MainWindow::onCustomButtonClicked(const QString &commandName) {
 }
 
 QStringList MainWindow::getCommandArguments(const QString &commandName) {
+    this->raise();
     QDialog dialog(this);
     dialog.setWindowTitle(tr("Enter Command Arguments"));
     dialog.setMinimumWidth(dialog.windowTitle().size() * 12);
