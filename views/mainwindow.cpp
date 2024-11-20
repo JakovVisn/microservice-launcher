@@ -611,9 +611,12 @@ bool MainWindow::eventFilter(QObject* obj, QEvent* event) {
         if (key == Qt::Key_Return || key == Qt::Key_Enter) {
             QCheckBox* focusedCheckBox = qobject_cast<QCheckBox*>(focusWidget());
 
-            if (focusedCheckBox) {
+            if (focusedCheckBox && !searchLineEdit->text().isEmpty()) {
                 focusedCheckBox->setChecked(!focusedCheckBox->isChecked());
                 searchLineEdit->setFocus();
+                return true;
+            } else if (focusedCheckBox && searchLineEdit->text().isEmpty()) {
+                focusedCheckBox->setChecked(!focusedCheckBox->isChecked());
                 return true;
             }
 
