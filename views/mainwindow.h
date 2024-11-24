@@ -49,6 +49,7 @@ private:
     void updateServicesStatus();
     QStringList getCommandArguments(const QString &commandName);
     void executeForSelectedMicroservices(const QString &commandName, const QStringList &commandArgs);
+    void showAboutDialog();
 
     Ui::MainWindow *ui;
     Model* model;

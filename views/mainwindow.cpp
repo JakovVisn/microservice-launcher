@@ -400,6 +400,10 @@ void MainWindow::loadSettings() {
     QAction *addSaveAction = new QAction("Add New Save", this);
     connect(addSaveAction, &QAction::triggered, this, &MainWindow::onAddSaveClicked);
     settingsMenu->addAction(addSaveAction);
+
+    QAction *aboutAction = new QAction("About", this);
+    connect(aboutAction, &QAction::triggered, this, &MainWindow::showAboutDialog);
+    settingsMenu->addAction(aboutAction);
 }
 
 void MainWindow::loadSavesFromConfigFile() {
@@ -790,4 +794,15 @@ void MainWindow::onApplyFlagToAllServices(const QString &flag) {
 
 void MainWindow::onRemoveFlagFromAllServicesClicked(const QString &flag) {
     controller->updateFlagStateForAllServices(flag, Qt::Unchecked);
+}
+
+void MainWindow::showAboutDialog() {
+    QMessageBox aboutBox(this);
+    aboutBox.setWindowTitle("About");
+    aboutBox.setTextFormat(Qt::RichText);
+    aboutBox.setText("<b>Microservice Launcher</b><br><br>"
+                     "GitHub: <a href='https://github.com/JakovVisn/microservice-launcher'>https://github.com/JakovVisn/microservice-launcher</a><br><br>"
+                     "Microservice Launcher is application for launching and managing microservices.");
+    aboutBox.setDefaultButton(QMessageBox::Ok);
+    aboutBox.exec();
 }
