@@ -177,7 +177,16 @@ void MainWindow::onAddCommandClicked() {
     layout->addWidget(executeForSelectedCheckBox);
 
     QCheckBox *disableSelectedServicesCheckBox = new QCheckBox("Disable currently selected services", &dialog);
+    disableSelectedServicesCheckBox->setEnabled(false);
     layout->addWidget(disableSelectedServicesCheckBox);
+
+    connect(executeForSelectedCheckBox, &QCheckBox::toggled, disableSelectedServicesCheckBox, [disableSelectedServicesCheckBox](bool checked) {
+        disableSelectedServicesCheckBox->setEnabled(checked);
+
+        if (!checked) {
+            disableSelectedServicesCheckBox->setChecked(false);
+        }
+    });
 
     QDialogButtonBox buttonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, Qt::Horizontal, &dialog);
     layout->addWidget(&buttonBox);
