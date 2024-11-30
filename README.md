@@ -84,7 +84,7 @@ Refer to the image [above](#microservice-launcher).
 The Microservice Launcher has checkboxes to select the microservices to which the command will be applied.
 
 ### Command Menu Customization
-Microservice Launcher includes a command menu that allows users to organize commands with buttons. When adding a new command, a corresponding button in the menu is not automatically generated. Instead, users can configure the button layout — including the [number of rows](#mainwindowbuttons) and the size of each button — using the [Configuration file](#configuration-file).
+Microservice Launcher includes a command menu that allows users to organize commands with buttons. When adding a new command, a corresponding button in the menu is not automatically generated. Instead, users can configure the button layout — including the [number of rows](#mainwindowbuttons) and the style of each button — using the [Configuration file](#configuration-file).
 
 ![command_menu.png](docs/images/command_menu.png)
 
@@ -140,7 +140,7 @@ Menu `Flags` Provides options for managing flags.
 - The `Add New Save` button prompts users to enter a name for the new save, saves all selected checkboxes, and adds the save with the specified name to the Save menu.
 
 ### Save Menu
-- Save menu contains all saves, created with [Add New Save Button]((#add-new-save-button)). By clicking on the save, the state of saved checkboxes will be restored.
+- Save menu contains all saves, created with [Add New Save Button](#add-new-save-button). By clicking on the save, the state of saved checkboxes will be restored.
 
 ### Additional Commands Menu
 - This menu contains all commands, including main menu commands.
@@ -183,6 +183,8 @@ General settings for the application.
     - The directory where all microservices are located.
   - ##### ExcludedFolders
     - List of directories within the [Directory](#directory) that should be ignored.
+  - ##### DefaultButtonStyle
+    - The default style of buttons in the main window.
 - #### MainWindowButtons
 The `MainWindowButtons` section defines the layout of buttons displayed in the main application window. Each entry in this group represents a row of buttons, where the order and names of buttons are specified as a comma-separated list.
   - Entry Format: Each row is labeled as `buttonLayoutX`, where `X` is a unique number (e.g., `buttonLayout1`, `buttonLayout2`).
@@ -197,6 +199,20 @@ The `WindowSize` section defines the size of the main window in pixels.
     - The height of the main window in pixels.
   - ##### width
     - The width of the main window in pixels.
+- #### Command_\<Name\>
+Each `Command_<Name>` section defines a custom command that can be executed by the user. The \<Name\> of the section should contain the same name of the command. Each section can contain the following parameters:
+  - ##### scriptName
+    - The name of the script that will be executed when the command is triggered.
+  - ##### command
+    - The command that will be passed to the script as an argument.
+  - ##### args
+    - A list of arguments that will be passed to the script.
+  - ##### executeForSelected
+    - A boolean value that determines whether the command will be executed selected services or only once.
+  - ##### excludedServices
+    - List of services that will be ignored when the command is executed
+  - ##### buttonStyle
+    - The style of the button that will be used in the main window.
 
 ## Deployment
   - ### Mac OS
