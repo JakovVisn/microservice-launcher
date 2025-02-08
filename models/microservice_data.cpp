@@ -71,10 +71,12 @@ QVector<int> MicroserviceData::readPortsFromFile(const QString directory) const 
 
     QStringList parts = output.split(" ");
 
-    for (const QString& part : parts) {
+    for (auto iter = parts.constBegin(); iter != parts.constEnd(); ++iter) {
         bool ok;
-        int port = part.toInt(&ok);
-        if (ok) ports.append(port);
+        int port = iter->toInt(&ok);
+        if (ok) {
+            ports.append(port);
+        }
     }
 
     return ports;
@@ -235,7 +237,7 @@ void MicroserviceData::addFlag(const QString flag, bool visible, bool check) {
 
     QObject *context = new QObject(flagCheckBox);
 
-    flagCheckBox->connect(flagCheckBox, &QCheckBox::stateChanged, context, [this]() {
+    flagCheckBox->connect(flagCheckBox, &QCheckBox::checkStateChanged, context, [this]() {
         updateEnabledFlagsLabel();
     });
 }
@@ -285,7 +287,8 @@ QString MicroserviceData::getPIDByPorts() const {
         return "";
     }
 
-    for (int port : ports) {
+    for (auto iter = ports.constBegin(); iter != ports.constEnd(); ++iter) {
+        int port = *iter;
         QString cmd = "lsof -i :" + QString::number(port) + " -t";
         QProcess process;
 

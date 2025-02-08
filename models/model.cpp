@@ -61,9 +61,9 @@ QStringList Model::getFolderNames() const {
     QStringList folderList = dir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
     QStringList excludedFolders = readExcludedFoldersFromConfig();
 
-    for (const QString& folderName : folderList) {
-        if (!excludedFolders.contains(folderName)) {
-            folderNames.append(folderName);
+    for (auto iter = folderList.constBegin(); iter != folderList.constEnd(); ++iter) {
+        if (!excludedFolders.contains(*iter)) {
+            folderNames.append(*iter);
         }
     }
 

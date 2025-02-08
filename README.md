@@ -225,12 +225,12 @@ To build the project on macOS, follow these steps:
 5. Copy the built application to the Desktop.
 6. Use the `macdeployqt` tool to deploy the application:
 ```sh
-   $HOME/Qt/6.7.2/macos/bin/macdeployqt $HOME/Desktop/MicroserviceLauncher.app
+   $HOME/Qt/6.8.2/macos/bin/macdeployqt $HOME/Desktop/MicroserviceLauncher.app
 ```
 7. Zip the application and send it to the recipient.
 8. The recipient needs to unzip the application and run the following command to remove the quarantine attribute:
 ```sh
-   xattr -d com.apple.quarantine $HOME/Downloads/MicroserviceLauncher.app
+   xattr -rd com.apple.quarantine $HOME/Downloads/MicroserviceLauncher.app
 ```
 
   - ### Linux

@@ -238,8 +238,8 @@ void MainWindow::onAddCommandClicked() {
     if (disableSelectedServicesEnabled) {
         QVector<MicroserviceData*> checkedServices = model->getMicroservices().getCheckedServices();
         if (!checkedServices.isEmpty()) {
-            for (MicroserviceData* service : checkedServices) {
-                checkedServicesNames << service->getName();
+            for (auto iter = checkedServices.constBegin(); iter != checkedServices.constEnd(); ++iter) {
+                checkedServicesNames << (*iter)->getName();
             }
 
             settings.setValue("excludedServices", checkedServicesNames);
@@ -297,8 +297,8 @@ void MainWindow::onAddSaveClicked() {
     QString newSaveName = nameLineEdit->text();
 
     QStringList checkedServicesNames;
-    for (MicroserviceData* service : checkedServices) {
-        checkedServicesNames << service->getName();
+    for (auto iter = checkedServices.constBegin(); iter != checkedServices.constEnd(); ++iter) {
+        checkedServicesNames << (*iter)->getName();
     }
 
     QSettings settings(model->getConfigFile(), QSettings::IniFormat);
@@ -374,15 +374,15 @@ void MainWindow::loadSettings() {
 
     applyFlagsToAllServicesSubMenu = new QMenu("Apply Flags to All Services", this);
     removeFlagsFromAllServicesSubMenu = new QMenu("Remove Flags from All Services", this);
-    for (const QString& flag : flags) {
-        QAction *applyFlagAction = new QAction(flag, this);
-        connect(applyFlagAction, &QAction::triggered, this, [this, flag]() {
+    for (auto iter = flags.constBegin(); iter != flags.constEnd(); ++iter) {
+        QAction *applyFlagAction = new QAction(*iter, this);
+        connect(applyFlagAction, &QAction::triggered, this, [this, flag = *iter]() {
             onApplyFlagToAllServices(flag);
         });
         applyFlagsToAllServicesSubMenu->addAction(applyFlagAction);
 
-        QAction *removeFlagAction = new QAction(flag, this);
-        connect(removeFlagAction, &QAction::triggered, this, [this, flag]() {
+        QAction *removeFlagAction = new QAction(*iter, this);
+        connect(removeFlagAction, &QAction::triggered, this, [this, flag = *iter]() {
             onRemoveFlagFromAllServicesClicked(flag);
         });
         removeFlagsFromAllServicesSubMenu->addAction(removeFlagAction);
@@ -411,10 +411,10 @@ void MainWindow::loadSavesFromConfigFile() {
     settings.beginGroup("Save");
 
     QStringList saveNames = settings.childKeys();
-    for (const QString& saveName : saveNames) {
-        QAction *save = new QAction(saveName, this);
+    for (auto iter = saveNames.constBegin(); iter != saveNames.constEnd(); ++iter) {
+        QAction *save = new QAction(*iter, this);
 
-        connect(save, &QAction::triggered, this, [this, saveName]() {
+        connect(save, &QAction::triggered, this, [this, saveName = *iter]() {
             onSaveActionClicked(saveName);
         });
 
@@ -452,26 +452,27 @@ void MainWindow::loadMainWindowButtonsFromConfigFile() {
 
     settings.beginGroup("MainWindowButtons");
     QStringList mainWindowButtonsGroups = settings.childKeys();
-    for (const QString& group : mainWindowButtonsGroups) {
-        QStringList commandNames = settings.value(group).toStringList();
+    for (auto groupIter = mainWindowButtonsGroups.constBegin(); groupIter != mainWindowButtonsGroups.constEnd(); ++groupIter) {
+        QStringList commandNames = settings.value(*groupIter).toStringList();
         QHBoxLayout* groupLayout = new QHBoxLayout;
         groupLayout->setAlignment(Qt::AlignLeft);
-        for (const QString& commandName : commandNames) {
-            QPushButton *pushButton = new QPushButton(commandName, this);
 
-            QString style = controller->getCommandButtonStyle(commandName);
+        for (auto commandIter = commandNames.constBegin(); commandIter != commandNames.constEnd(); ++commandIter) {
+            QPushButton *pushButton = new QPushButton(*commandIter, this);
+
+            QString style = controller->getCommandButtonStyle(*commandIter);
             if (!style.isEmpty()) {
                 pushButton->setStyleSheet(style);
             }
 
-            if (commandName == "Select All") {
+            if (*commandIter == "Select All") {
                 connect(pushButton, &QPushButton::clicked, this, &MainWindow::onSelectAllButtonClicked);
-            } else if (commandName == "Deselect All") {
+            } else if (*commandIter == "Deselect All") {
                 connect(pushButton, &QPushButton::clicked, this, &MainWindow::onDeselectAllButtonClicked);
-            } else if (commandName == "Refresh") {
+            } else if (*commandIter == "Refresh") {
                 connect(pushButton, &QPushButton::clicked, this, &MainWindow::onRefreshButtonClicked);
             } else {
-                connect(pushButton, &QPushButton::clicked, this, [this, commandName]() {
+                connect(pushButton, &QPushButton::clicked, this, [this, commandName = *commandIter]() {
                     onCustomButtonClicked(commandName);
                 });
             }
@@ -511,9 +512,9 @@ QStringList MainWindow::getCommandArguments(const QString &commandName) {
     QVBoxLayout *layout = new QVBoxLayout(&dialog);
     QStringList commandArgumentNames = controller->getCommandArgs(commandName);
 
-    for (const QString &argument : commandArgumentNames) {
+    for (auto iter = commandArgumentNames.constBegin(); iter != commandArgumentNames.constEnd(); ++iter) {
         QLineEdit *lineEdit = new QLineEdit(&dialog);
-        lineEdit->setPlaceholderText(argument);
+        lineEdit->setPlaceholderText(*iter);
         layout->addWidget(lineEdit);
     }
 
