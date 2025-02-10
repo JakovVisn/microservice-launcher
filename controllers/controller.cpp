@@ -88,7 +88,8 @@ void Controller::executeScript(const QString &commandName, const QStringList &ad
     QStringList args;
     args << commands.value(commandName)->getCommand()
          << model->getDirectory()
-         << additionalArgs;
+         << additionalArgs
+         << QString(APP_VERSION);
 
     qDebug() << "Starting script:" << scriptName << "with args:" << args;
     process.setProgram(QCoreApplication::applicationDirPath() + "/" + scriptName);

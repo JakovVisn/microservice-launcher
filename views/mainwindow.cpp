@@ -17,7 +17,7 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    setWindowTitle("Microservice Launcher (V2.1.0)");
+    setWindowTitle(QStringLiteral("Microservice Launcher ") + QString(APP_VERSION));
     statusBar()->addPermanentWidget(servicesStatusLabel);
 
     model = new Model();
