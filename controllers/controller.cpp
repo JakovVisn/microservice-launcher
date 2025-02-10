@@ -5,6 +5,7 @@
 #include <QSettings>
 #include <QCoreApplication>
 #include <QMessageBox>
+#include <QStandardPaths>
 
 Controller::Controller(Model *model)
     : model(model)
@@ -92,7 +93,7 @@ void Controller::executeScript(const QString &commandName, const QStringList &ad
          << QString(APP_VERSION);
 
     qDebug() << "Starting script:" << scriptName << "with args:" << args;
-    process.setProgram(QCoreApplication::applicationDirPath() + "/" + scriptName);
+    process.setProgram(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + "/" + scriptName);
     process.setArguments(args);
 
     connect(&process, &QProcess::readyReadStandardOutput, [&process]() {

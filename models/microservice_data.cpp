@@ -4,6 +4,7 @@
 #include <QProcessEnvironment>
 #include <QTcpSocket>
 #include <QDir>
+#include <QStandardPaths>
 
 MicroserviceData::MicroserviceData(const QString name, const QString directory)
     : name(name)
@@ -31,7 +32,7 @@ QString MicroserviceData::readApplicationShortNameFromFile(const QString& filePa
     args << filePath;
 
     QProcess process;
-    QString scriptPath = QDir(QCoreApplication::applicationDirPath()).filePath("short_name.sh");
+    QString scriptPath = QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)).filePath("short_name.sh");
     process.start(scriptPath, args);
     if (!process.waitForStarted() || !process.waitForFinished()) {
         qWarning() << "Failed to execute script:" << process.errorString();
@@ -55,7 +56,7 @@ QVector<int> MicroserviceData::readPortsFromFile(const QString directory) const 
          << shortName;
 
     QProcess process;
-    QString scriptPath = QDir(QCoreApplication::applicationDirPath()).filePath("ports.sh");
+    QString scriptPath = QDir(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)).filePath("ports.sh");
     process.start(scriptPath, args);
     if (!process.waitForStarted() || !process.waitForFinished()) {
         qWarning() << "Failed to execute script:" << process.errorString();

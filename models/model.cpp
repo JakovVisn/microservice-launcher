@@ -6,6 +6,7 @@
 #include <QProcessEnvironment>
 #include <QSettings>
 #include <QCoreApplication>
+#include <QStandardPaths>
 
 Model::Model()
     : defaultConfigFile(createEmptyFile("/config.ini"))
@@ -71,27 +72,36 @@ QStringList Model::getFolderNames() const {
     return folderNames;
 }
 
-QString Model::getDirectory() const
-{
+QString Model::getDirectory() const {
     return directory;
 }
 
 QString Model::createEmptyFile(const QString fileName) const {
-    const QString& appPath = QCoreApplication::applicationDirPath() + fileName;
-    QFile file(appPath);
+    QString appPath = QStandardPaths::writableLocation(QStandardPaths::AppDataLocation);
+    QDir dir(appPath);
 
-    if (file.exists()) {
-        qDebug() << "File already exists:" << appPath;
-    } else {
-        if (file.open(QIODevice::WriteOnly)) {
-            file.close();
-            qDebug() << "Empty file created:" << appPath;
-        } else {
-            qDebug() << "Failed to create the file:" << appPath;
+    if (!dir.exists()) {
+        if (!dir.mkpath(".")) {
+            qDebug() << "Failed to create directory:" << appPath;
+            return QString();
         }
     }
 
-    return appPath;
+    QString filePath = appPath + fileName;
+    QFile file(filePath);
+
+    if (file.exists()) {
+        qDebug() << "File already exists:" << filePath;
+    } else {
+        if (file.open(QIODevice::WriteOnly)) {
+            file.close();
+            qDebug() << "Empty file created:" << filePath;
+        } else {
+            qDebug() << "Failed to create the file:" << filePath;
+        }
+    }
+
+    return filePath;
 }
 
 QString Model::readDirectory() const {
